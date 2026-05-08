@@ -7,6 +7,9 @@ import {
   HeadContent,
   Scripts,
 } from "@tanstack/react-router";
+import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/context/AuthContext";
+import { ThemeManager } from "@/components/ThemeManager";
 
 import appCss from "../styles.css?url";
 
@@ -72,19 +75,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Lovable App" },
-      { name: "description", content: "Lovable Generated Project" },
-      { name: "author", content: "Lovable" },
-      { property: "og:title", content: "Lovable App" },
-      { property: "og:description", content: "Lovable Generated Project" },
+      { title: "Renault RDV — Gérez vos rendez-vous" },
+      { name: "description", content: "Le portail officiel des agences Renault Tunisie pour clients et agents." },
+      { property: "og:title", content: "Renault RDV — Tunisie" },
+      { property: "og:description", content: "Prenez et gérez vos rendez-vous Renault en quelques clics." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
-      { name: "twitter:site", content: "@Lovable" },
     ],
     links: [
+      { rel: "stylesheet", href: appCss },
+      { rel: "preconnect", href: "https://fonts.googleapis.com" },
+      { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "" },
       {
         rel: "stylesheet",
-        href: appCss,
+        href: "https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap",
       },
     ],
   }),
@@ -113,7 +117,18 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <Outlet />
+      <ThemeManager />
+      <AuthProvider>
+        <Outlet />
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            classNames: {
+              toast: "border border-border bg-card text-card-foreground shadow-lg",
+            },
+          }}
+        />
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
