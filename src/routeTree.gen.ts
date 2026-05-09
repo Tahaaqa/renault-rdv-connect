@@ -10,11 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedClientReclamationsRouteImport } from './routes/_authenticated.client.reclamations'
+import { Route as AuthenticatedClientRdvNouveauRouteImport } from './routes/_authenticated.client.rdv-nouveau'
+import { Route as AuthenticatedClientProfilRouteImport } from './routes/_authenticated.client.profil'
+import { Route as AuthenticatedClientHistoriqueRouteImport } from './routes/_authenticated.client.historique'
+import { Route as AuthenticatedClientFaqRouteImport } from './routes/_authenticated.client.faq'
+import { Route as AuthenticatedClientDashboardRouteImport } from './routes/_authenticated.client.dashboard'
+import { Route as AuthenticatedClientRdvIdRouteImport } from './routes/_authenticated.client.rdv.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -22,30 +34,123 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedClientReclamationsRoute =
+  AuthenticatedClientReclamationsRouteImport.update({
+    id: '/client/reclamations',
+    path: '/client/reclamations',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClientRdvNouveauRoute =
+  AuthenticatedClientRdvNouveauRouteImport.update({
+    id: '/client/rdv-nouveau',
+    path: '/client/rdv-nouveau',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClientProfilRoute =
+  AuthenticatedClientProfilRouteImport.update({
+    id: '/client/profil',
+    path: '/client/profil',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClientHistoriqueRoute =
+  AuthenticatedClientHistoriqueRouteImport.update({
+    id: '/client/historique',
+    path: '/client/historique',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClientFaqRoute = AuthenticatedClientFaqRouteImport.update({
+  id: '/client/faq',
+  path: '/client/faq',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedClientDashboardRoute =
+  AuthenticatedClientDashboardRouteImport.update({
+    id: '/client/dashboard',
+    path: '/client/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedClientRdvIdRoute =
+  AuthenticatedClientRdvIdRouteImport.update({
+    id: '/client/rdv/$id',
+    path: '/client/rdv/$id',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/client/dashboard': typeof AuthenticatedClientDashboardRoute
+  '/client/faq': typeof AuthenticatedClientFaqRoute
+  '/client/historique': typeof AuthenticatedClientHistoriqueRoute
+  '/client/profil': typeof AuthenticatedClientProfilRoute
+  '/client/rdv-nouveau': typeof AuthenticatedClientRdvNouveauRoute
+  '/client/reclamations': typeof AuthenticatedClientReclamationsRoute
+  '/client/rdv/$id': typeof AuthenticatedClientRdvIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/client/dashboard': typeof AuthenticatedClientDashboardRoute
+  '/client/faq': typeof AuthenticatedClientFaqRoute
+  '/client/historique': typeof AuthenticatedClientHistoriqueRoute
+  '/client/profil': typeof AuthenticatedClientProfilRoute
+  '/client/rdv-nouveau': typeof AuthenticatedClientRdvNouveauRoute
+  '/client/reclamations': typeof AuthenticatedClientReclamationsRoute
+  '/client/rdv/$id': typeof AuthenticatedClientRdvIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/client/dashboard': typeof AuthenticatedClientDashboardRoute
+  '/_authenticated/client/faq': typeof AuthenticatedClientFaqRoute
+  '/_authenticated/client/historique': typeof AuthenticatedClientHistoriqueRoute
+  '/_authenticated/client/profil': typeof AuthenticatedClientProfilRoute
+  '/_authenticated/client/rdv-nouveau': typeof AuthenticatedClientRdvNouveauRoute
+  '/_authenticated/client/reclamations': typeof AuthenticatedClientReclamationsRoute
+  '/_authenticated/client/rdv/$id': typeof AuthenticatedClientRdvIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/client/dashboard'
+    | '/client/faq'
+    | '/client/historique'
+    | '/client/profil'
+    | '/client/rdv-nouveau'
+    | '/client/reclamations'
+    | '/client/rdv/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login'
-  id: '__root__' | '/' | '/login'
+  to:
+    | '/'
+    | '/login'
+    | '/client/dashboard'
+    | '/client/faq'
+    | '/client/historique'
+    | '/client/profil'
+    | '/client/rdv-nouveau'
+    | '/client/reclamations'
+    | '/client/rdv/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/login'
+    | '/_authenticated/client/dashboard'
+    | '/_authenticated/client/faq'
+    | '/_authenticated/client/historique'
+    | '/_authenticated/client/profil'
+    | '/_authenticated/client/rdv-nouveau'
+    | '/_authenticated/client/reclamations'
+    | '/_authenticated/client/rdv/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
 }
 
@@ -58,6 +163,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -65,13 +177,97 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/client/reclamations': {
+      id: '/_authenticated/client/reclamations'
+      path: '/client/reclamations'
+      fullPath: '/client/reclamations'
+      preLoaderRoute: typeof AuthenticatedClientReclamationsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/client/rdv-nouveau': {
+      id: '/_authenticated/client/rdv-nouveau'
+      path: '/client/rdv-nouveau'
+      fullPath: '/client/rdv-nouveau'
+      preLoaderRoute: typeof AuthenticatedClientRdvNouveauRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/client/profil': {
+      id: '/_authenticated/client/profil'
+      path: '/client/profil'
+      fullPath: '/client/profil'
+      preLoaderRoute: typeof AuthenticatedClientProfilRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/client/historique': {
+      id: '/_authenticated/client/historique'
+      path: '/client/historique'
+      fullPath: '/client/historique'
+      preLoaderRoute: typeof AuthenticatedClientHistoriqueRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/client/faq': {
+      id: '/_authenticated/client/faq'
+      path: '/client/faq'
+      fullPath: '/client/faq'
+      preLoaderRoute: typeof AuthenticatedClientFaqRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/client/dashboard': {
+      id: '/_authenticated/client/dashboard'
+      path: '/client/dashboard'
+      fullPath: '/client/dashboard'
+      preLoaderRoute: typeof AuthenticatedClientDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/client/rdv/$id': {
+      id: '/_authenticated/client/rdv/$id'
+      path: '/client/rdv/$id'
+      fullPath: '/client/rdv/$id'
+      preLoaderRoute: typeof AuthenticatedClientRdvIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedClientDashboardRoute: typeof AuthenticatedClientDashboardRoute
+  AuthenticatedClientFaqRoute: typeof AuthenticatedClientFaqRoute
+  AuthenticatedClientHistoriqueRoute: typeof AuthenticatedClientHistoriqueRoute
+  AuthenticatedClientProfilRoute: typeof AuthenticatedClientProfilRoute
+  AuthenticatedClientRdvNouveauRoute: typeof AuthenticatedClientRdvNouveauRoute
+  AuthenticatedClientReclamationsRoute: typeof AuthenticatedClientReclamationsRoute
+  AuthenticatedClientRdvIdRoute: typeof AuthenticatedClientRdvIdRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedClientDashboardRoute: AuthenticatedClientDashboardRoute,
+  AuthenticatedClientFaqRoute: AuthenticatedClientFaqRoute,
+  AuthenticatedClientHistoriqueRoute: AuthenticatedClientHistoriqueRoute,
+  AuthenticatedClientProfilRoute: AuthenticatedClientProfilRoute,
+  AuthenticatedClientRdvNouveauRoute: AuthenticatedClientRdvNouveauRoute,
+  AuthenticatedClientReclamationsRoute: AuthenticatedClientReclamationsRoute,
+  AuthenticatedClientRdvIdRoute: AuthenticatedClientRdvIdRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}
