@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { useDataStore } from "@/stores/dataStore";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
 import { useAuth } from "@/context/AuthContext";
 import { listAppointments, listClients, listVehicles } from "@/lib/backend-api";
@@ -14,22 +13,39 @@ export const Route = createFileRoute("/_authenticated/agent-fo/clients")({
 
 function AFOClients() {
   const { loading } = useAuth();
-  const { clients: localClients, vehicules: localVehicules, rdvs: localRdvs } = useDataStore();
-  const clientsQuery = useQuery({ queryKey: ["clients"], queryFn: listClients, enabled: !loading, retry: false });
-  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
-  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
-  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? localClients;
-  const vehicules = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? localVehicules;
-  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? localRdvs;
+  const clientsQuery = useQuery({
+    queryKey: ["clients"],
+    queryFn: listClients,
+    enabled: !loading,
+    retry: false,
+  });
+  const vehiclesQuery = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: listVehicles,
+    enabled: !loading,
+    retry: false,
+  });
+  const appointmentsQuery = useQuery({
+    queryKey: ["appointments"],
+    queryFn: listAppointments,
+    enabled: !loading,
+    retry: false,
+  });
+  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? [];
+  const vehicules = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? [];
+  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? [];
   const [q, setQ] = useState("");
   const filtered = clients.filter((c) =>
-    `${c.prenom} ${c.nom} ${c.email} ${c.telephone}`.toLowerCase().includes(q.toLowerCase())
+    `${c.prenom} ${c.nom} ${c.email} ${c.telephone}`.toLowerCase().includes(q.toLowerCase()),
   );
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="relative">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <Search
+          size={16}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+        />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
@@ -54,14 +70,18 @@ function AFOClients() {
               const count = rdvs.filter((r) => r.clientId === c.id).length;
               return (
                 <tr key={c.id} className="border-t border-border hover:bg-background/40">
-                  <td className="px-4 py-3 font-display font-semibold">{c.prenom} {c.nom}</td>
+                  <td className="px-4 py-3 font-display font-semibold">
+                    {c.prenom} {c.nom}
+                  </td>
                   <td className="px-4 py-3">
                     <div>{c.email}</div>
                     <div className="text-xs text-muted-foreground">{c.telephone || "-"}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1.5">
-                      {veh.map((v) => <VehiclePlate key={v.id} value={v.immatriculation} size="sm" />)}
+                      {veh.map((v) => (
+                        <VehiclePlate key={v.id} value={v.immatriculation} size="sm" />
+                      ))}
                     </div>
                   </td>
                   <td className="px-4 py-3 font-mono">{count}</td>

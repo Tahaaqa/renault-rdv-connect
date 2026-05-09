@@ -38,4 +38,3 @@ export async function requireSessionFromRequest(request: Request): Promise<AppSe
   }
   return session;
 }
-

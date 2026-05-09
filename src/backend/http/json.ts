@@ -14,4 +14,3 @@ export function redirectResponse(location: string, status = 302): Response {
     headers: { location },
   });
 }
-

@@ -1,12 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, CalendarCheck, ShieldCheck, Smartphone, Sparkles, Building2, Users, BarChart3 } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarCheck,
+  ShieldCheck,
+  Smartphone,
+  Sparkles,
+  Building2,
+  Users,
+  BarChart3,
+} from "lucide-react";
 
 export const Route = createFileRoute("/")({
   component: Landing,
   head: () => ({
     meta: [
       { title: "Renault RDV — Portail des agences Renault Tunisie" },
-      { name: "description", content: "Prenez rendez-vous dans une agence Renault en Tunisie. Simple, rapide, sécurisé." },
+      {
+        name: "description",
+        content: "Prenez rendez-vous dans une agence Renault en Tunisie. Simple, rapide, sécurisé.",
+      },
     ],
   }),
 });
@@ -62,9 +74,9 @@ function Landing() {
               </h1>
 
               <p className="mt-8 max-w-xl text-base md:text-lg text-muted-foreground leading-relaxed">
-                Le portail officiel des agences <span className="text-foreground font-medium">Renault Tunisie</span> —
-                pour clients et agents. Prenez, suivez et gérez vos rendez-vous d'entretien
-                en quelques clics.
+                Le portail officiel des agences{" "}
+                <span className="text-foreground font-medium">Renault Tunisie</span> — pour clients
+                et agents. Prenez, suivez et gérez vos rendez-vous d'entretien en quelques clics.
               </p>
 
               <div className="mt-10 flex flex-wrap gap-3">
@@ -73,7 +85,10 @@ function Landing() {
                   className="press group inline-flex items-center gap-2 rounded-xl bg-yellow px-7 py-4 text-sm font-display font-semibold text-renault-black transition hover:brightness-110 yellow-glow"
                 >
                   Accéder à mon espace
-                  <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                  <ArrowRight
+                    size={18}
+                    className="transition-transform group-hover:translate-x-1"
+                  />
                 </a>
                 <a
                   href="/login"
@@ -89,7 +104,10 @@ function Landing() {
                   { icon: Smartphone, label: "iOS & Android" },
                   { icon: CalendarCheck, label: "Disponible 24/7" },
                 ].map((b) => (
-                  <span key={b.label} className="inline-flex items-center gap-2 rounded-full border border-yellow/25 bg-yellow/5 px-4 py-1.5 text-xs font-medium">
+                  <span
+                    key={b.label}
+                    className="inline-flex items-center gap-2 rounded-full border border-yellow/25 bg-yellow/5 px-4 py-1.5 text-xs font-medium"
+                  >
                     <b.icon size={13} className="text-yellow" />
                     {b.label}
                   </span>
@@ -104,7 +122,9 @@ function Landing() {
                 <div className="relative rounded-2xl border border-yellow/20 bg-card p-1 shadow-2xl">
                   <div className="rounded-xl bg-surface-sunk p-6">
                     <div className="mb-5 flex items-center justify-between">
-                      <span className="text-xs uppercase tracking-widest text-muted-foreground">Prochain RDV</span>
+                      <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                        Prochain RDV
+                      </span>
                       <span className="inline-flex items-center gap-1.5 rounded-full bg-status-confirmed/15 px-3 py-1 text-[11px] font-medium text-status-confirmed">
                         <span className="h-1.5 w-1.5 rounded-full bg-status-confirmed" />
                         Confirmé
@@ -129,7 +149,10 @@ function Landing() {
 
                     <div className="mt-6 grid grid-cols-3 gap-2">
                       {["Vidange", "Révision", "Pneus"].map((s) => (
-                        <div key={s} className="rounded-md border border-border bg-card/60 p-2 text-center text-[11px] text-muted-foreground">
+                        <div
+                          key={s}
+                          className="rounded-md border border-border bg-card/60 p-2 text-center text-[11px] text-muted-foreground"
+                        >
                           {s}
                         </div>
                       ))}
@@ -155,7 +178,8 @@ function Landing() {
               Une plateforme, conçue pour chacun.
             </h2>
             <p className="mt-4 text-muted-foreground">
-              Que vous soyez client, agent en agence ou administrateur, l'expérience est pensée pour votre rôle.
+              Que vous soyez client, agent en agence ou administrateur, l'expérience est pensée pour
+              votre rôle.
             </p>
           </div>
 
@@ -191,7 +215,9 @@ function Landing() {
                 <div className="mb-5 inline-flex h-11 w-11 items-center justify-center rounded-lg bg-yellow/10 text-yellow">
                   <card.icon size={22} />
                 </div>
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">{card.tag}</span>
+                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  {card.tag}
+                </span>
                 <h3 className="mt-2 font-display text-xl font-semibold">{card.title}</h3>
                 <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{card.desc}</p>
                 <ul className="mt-5 space-y-2">
@@ -218,7 +244,9 @@ function Landing() {
             { v: "100%", l: "Sécurisé SSO" },
           ].map((s) => (
             <div key={s.l}>
-              <div className="font-display text-4xl md:text-5xl font-extrabold text-yellow">{s.v}</div>
+              <div className="font-display text-4xl md:text-5xl font-extrabold text-yellow">
+                {s.v}
+              </div>
               <div className="mt-2 text-sm text-muted-foreground">{s.l}</div>
             </div>
           ))}
@@ -249,9 +277,15 @@ function Landing() {
           <Logo size={28} />
           <div>© 2025 Renault Tunisie · Portail RDV</div>
           <div className="flex gap-5">
-            <a href="#" className="hover:text-yellow transition">Confidentialité</a>
-            <a href="#" className="hover:text-yellow transition">Conditions</a>
-            <a href="#" className="hover:text-yellow transition">Support</a>
+            <a href="#" className="hover:text-yellow transition">
+              Confidentialité
+            </a>
+            <a href="#" className="hover:text-yellow transition">
+              Conditions
+            </a>
+            <a href="#" className="hover:text-yellow transition">
+              Support
+            </a>
           </div>
         </div>
       </footer>

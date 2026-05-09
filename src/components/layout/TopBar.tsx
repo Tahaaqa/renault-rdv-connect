@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useUIStore } from "@/stores/uiStore";
-import { useDataStore } from "@/stores/dataStore";
 import { useAuth } from "@/context/AuthContext";
 import { listNotifications, markNotificationsRead } from "@/lib/backend-api";
 import {
@@ -24,8 +23,6 @@ export function TopBar({ title }: { title?: string }) {
   const setDevRole = useUIStore((s) => s.setDevRole);
   const { realRole, loading } = useAuth();
   const queryClient = useQueryClient();
-  const localNotifications = useDataStore((s) => s.notifications);
-  const markAllLocal = useDataStore((s) => s.markAllNotificationsRead);
   const notificationsQuery = useQuery({
     queryKey: ["notifications"],
     queryFn: listNotifications,
@@ -35,15 +32,15 @@ export function TopBar({ title }: { title?: string }) {
   const markReadMutation = useMutation({
     mutationFn: markNotificationsRead,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
-    onError: markAllLocal,
   });
-  const notifications = notificationsQuery.data?.notifications ?? localNotifications;
+  const notifications = notificationsQuery.data?.notifications ?? [];
   const markAll = () => markReadMutation.mutate();
   const unread = notifications.filter((n) => !n.read).length;
   const [open, setOpen] = useState(false);
 
   const roles: AppRole[] = ["client", "agent_fo", "agent_bo"];
-  const labelFor = (r: AppRole) => (r === "client" ? "Client" : r === "agent_fo" ? "Agent FO" : "Back-Office");
+  const labelFor = (r: AppRole) =>
+    r === "client" ? "Client" : r === "agent_fo" ? "Agent FO" : "Back-Office";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl">
@@ -99,7 +96,9 @@ export function TopBar({ title }: { title?: string }) {
             <DropdownMenuSeparator />
             <div className="max-h-80 overflow-y-auto">
               {notifications.length === 0 ? (
-                <p className="px-3 py-6 text-center text-sm text-muted-foreground">Aucune notification</p>
+                <p className="px-3 py-6 text-center text-sm text-muted-foreground">
+                  Aucune notification
+                </p>
               ) : (
                 notifications.map((n) => (
                   <div
@@ -108,10 +107,14 @@ export function TopBar({ title }: { title?: string }) {
                       !n.read ? "bg-yellow/5" : ""
                     }`}
                   >
-                    <div className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${!n.read ? "bg-yellow" : "bg-muted"}`} />
+                    <div
+                      className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${!n.read ? "bg-yellow" : "bg-muted"}`}
+                    />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm">{n.message}</p>
-                      <p className="mt-0.5 text-[11px] text-muted-foreground">{fmtRelative(n.createdAt)}</p>
+                      <p className="mt-0.5 text-[11px] text-muted-foreground">
+                        {fmtRelative(n.createdAt)}
+                      </p>
                     </div>
                   </div>
                 ))

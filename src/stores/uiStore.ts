@@ -28,6 +28,6 @@ export const useUIStore = create<UIState>()(
       devRoleOverride: null,
       setDevRole: (r) => set({ devRoleOverride: r }),
     }),
-    { name: "renault-ui" }
-  )
+    { name: "renault-ui" },
+  ),
 );

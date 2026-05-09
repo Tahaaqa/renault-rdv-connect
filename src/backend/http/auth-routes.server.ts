@@ -63,7 +63,9 @@ async function handleCallback(request: Request): Promise<Response> {
     lastName: principal.lastName,
   });
 
-  const response = redirectResponse(landingPathForRoles(user.roles.length > 0 ? user.roles : principal.roles));
+  const response = redirectResponse(
+    landingPathForRoles(user.roles.length > 0 ? user.roles : principal.roles),
+  );
   return withSetCookies(response, tokenCookies(tokens));
 }
 

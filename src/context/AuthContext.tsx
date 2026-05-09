@@ -5,8 +5,8 @@ import { useUIStore } from "@/stores/uiStore";
 interface AuthContextValue {
   user: AppUser | null;
   profile: Profile | null;
-  role: AppRole;          // effective role (with dev override)
-  realRole: AppRole;      // actual DB role
+  role: AppRole; // effective role (with dev override)
+  realRole: AppRole; // actual DB role
   loading: boolean;
   signOut: () => void;
 }

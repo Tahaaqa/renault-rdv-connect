@@ -25,4 +25,3 @@ export function requireRole(session: AppSession, roles: AppRole[]): void {
     throw new Response("Forbidden", { status: 403 });
   }
 }
-

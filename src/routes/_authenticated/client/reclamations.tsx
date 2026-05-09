@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { MessageSquareWarning, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { useDataStore } from "@/stores/dataStore";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { fmtRelative } from "@/lib/format";
@@ -18,7 +17,6 @@ export const Route = createFileRoute("/_authenticated/client/reclamations")({
 function Reclamations() {
   const { loading } = useAuth();
   const queryClient = useQueryClient();
-  const { reclamations, currentClientId, addReclamation } = useDataStore();
   const complaintsQuery = useQuery({
     queryKey: ["complaints"],
     queryFn: listComplaints,
@@ -29,9 +27,7 @@ function Reclamations() {
     mutationFn: createComplaint,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["complaints"] }),
   });
-  const mine =
-    complaintsQuery.data?.complaints.map(mapComplaint) ??
-    reclamations.filter((r) => r.clientId === currentClientId);
+  const mine = complaintsQuery.data?.complaints.map(mapComplaint) ?? [];
   const [open, setOpen] = useState(false);
   const [text, setText] = useState("");
 
@@ -39,10 +35,9 @@ function Reclamations() {
     if (!text.trim()) return;
     try {
       await createComplaintMutation.mutateAsync({ description: text });
-      toast.success("Reclamation envoyee");
+      toast.success("Réclamation envoyée");
     } catch {
-      addReclamation({ clientId: currentClientId, description: text });
-      toast.success("Reclamation envoyee localement");
+      toast.error("Erreur lors de l'envoi de la réclamation");
     } finally {
       setText("");
       setOpen(false);
@@ -72,7 +67,10 @@ function Reclamations() {
             className="mt-3 w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <div className="mt-3 flex justify-end gap-2">
-            <button onClick={() => setOpen(false)} className="rounded-md border border-input px-3 py-1.5 text-sm">
+            <button
+              onClick={() => setOpen(false)}
+              className="rounded-md border border-input px-3 py-1.5 text-sm"
+            >
               Annuler
             </button>
             <button

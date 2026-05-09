@@ -7,7 +7,7 @@ import type {
   BackendVehicle,
   EntityId,
 } from "@/backend/domain";
-import type { StatutRDV, StatutReclamation } from "@/types";
+import type { AppRole, StatutRDV, StatutReclamation } from "@/types";
 
 export interface UserRepository {
   findById(id: EntityId): Promise<BackendUser | null>;

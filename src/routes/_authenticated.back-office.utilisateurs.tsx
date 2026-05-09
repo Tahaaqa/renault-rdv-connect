@@ -5,7 +5,6 @@ import { ShieldCheck, UserCog } from "lucide-react";
 import { toast } from "sonner";
 import { listAgencies, listUsers, updateUser } from "@/lib/backend-api";
 import { mapAgency } from "@/lib/backend-mappers";
-import { SEED_AGENCES } from "@/stores/dataStore";
 import type { BackendUser } from "@/backend/domain";
 import type { AppRole } from "@/types";
 
@@ -23,9 +22,10 @@ function ABOUsers() {
   const queryClient = useQueryClient();
   const usersQuery = useQuery({ queryKey: ["users"], queryFn: listUsers, retry: false });
   const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, retry: false });
-  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? [];
   const mutation = useMutation({
-    mutationFn: ({ id, input }: { id: string; input: Parameters<typeof updateUser>[1] }) => updateUser(id, input),
+    mutationFn: ({ id, input }: { id: string; input: Parameters<typeof updateUser>[1] }) =>
+      updateUser(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["clients"] });
@@ -44,7 +44,9 @@ function ABOUsers() {
         </div>
         <div>
           <h2 className="font-display text-xl font-semibold">Utilisateurs</h2>
-          <p className="text-sm text-muted-foreground">Roles applicatifs et affectation agence des agents.</p>
+          <p className="text-sm text-muted-foreground">
+            Roles applicatifs et affectation agence des agents.
+          </p>
         </div>
       </div>
 
@@ -73,7 +75,9 @@ function ABOUsers() {
             {users.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                  {usersQuery.isError ? "Backend utilisateurs indisponible." : "Aucun utilisateur synchronise depuis Keycloak."}
+                  {usersQuery.isError
+                    ? "Backend utilisateurs indisponible."
+                    : "Aucun utilisateur synchronise depuis Keycloak."}
                 </td>
               </tr>
             )}
@@ -155,7 +159,9 @@ function UserRow({
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
         >
           {Object.entries(ROLE_LABELS).map(([value, label]) => (
-            <option key={value} value={value}>{label}</option>
+            <option key={value} value={value}>
+              {label}
+            </option>
           ))}
         </select>
       </td>
@@ -168,7 +174,9 @@ function UserRow({
         >
           <option value="">Aucune agence</option>
           {agencies.map((agency) => (
-            <option key={agency.id} value={agency.id}>{agency.nom}</option>
+            <option key={agency.id} value={agency.id}>
+              {agency.nom}
+            </option>
           ))}
         </select>
       </td>

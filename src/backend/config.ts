@@ -1,3 +1,5 @@
+import { getRequestEnv } from "@/backend/env-store";
+
 export interface MongoConfig {
   uri: string;
   databaseName: string;
@@ -29,7 +31,7 @@ function requireEnv(env: EnvSource, name: string): string {
   return value;
 }
 
-export function getBackendConfig(env: EnvSource = process.env): BackendConfig {
+export function getBackendConfig(env: EnvSource = getRequestEnv() ?? process.env): BackendConfig {
   const appBaseUrl = requireEnv(env, "APP_BASE_URL");
 
   return {

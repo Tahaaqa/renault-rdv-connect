@@ -4,6 +4,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { handleAuthRoute } from "./backend/http/auth-routes.server";
 import { handleAppRoute } from "./backend/http/app-routes.server";
+import { setRequestEnv } from "./backend/env-store";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -14,7 +15,7 @@ let serverEntryPromise: Promise<ServerEntry> | undefined;
 async function getServerEntry(): Promise<ServerEntry> {
   if (!serverEntryPromise) {
     serverEntryPromise = import("@tanstack/react-start/server-entry").then(
-      (m) => ((m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry)),
+      (m) => (m as { default?: ServerEntry }).default ?? (m as unknown as ServerEntry),
     );
   }
   return serverEntryPromise;
@@ -71,6 +72,12 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      // Stash Cloudflare Worker env bindings so getBackendConfig() can read them.
+      // In local dev `env` is undefined and config.ts falls back to process.env.
+      if (env && typeof env === "object") {
+        setRequestEnv(env as Record<string, string | undefined>);
+      }
+
       const authResponse = await handleAuthRoute(request);
       if (authResponse) return authResponse;
       const appResponse = await handleAppRoute(request);

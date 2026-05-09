@@ -1,7 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarPlus, Calendar, Car, MessageSquareWarning, Plus, ArrowRight } from "lucide-react";
-import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
 import { useAuth } from "@/context/AuthContext";
 import { RDVCard } from "@/components/shared/RDVCard";
 import { EmptyState } from "@/components/shared/EmptyState";
@@ -16,23 +15,39 @@ export const Route = createFileRoute("/_authenticated/client/dashboard")({
 
 function ClientDashboard() {
   const { profile, loading } = useAuth();
-  const { rdvs, vehicules, reclamations, currentClientId } = useDataStore();
-  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
-  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
-  const complaintsQuery = useQuery({ queryKey: ["complaints"], queryFn: listComplaints, enabled: !loading, retry: false });
-  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
+  const appointmentsQuery = useQuery({
+    queryKey: ["appointments"],
+    queryFn: listAppointments,
+    enabled: !loading,
+    retry: false,
+  });
+  const vehiclesQuery = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: listVehicles,
+    enabled: !loading,
+    retry: false,
+  });
+  const complaintsQuery = useQuery({
+    queryKey: ["complaints"],
+    queryFn: listComplaints,
+    enabled: !loading,
+    retry: false,
+  });
+  const agenciesQuery = useQuery({
+    queryKey: ["agencies"],
+    queryFn: listAgencies,
+    enabled: !loading,
+    retry: false,
+  });
 
-  const backendRdvs = appointmentsQuery.data?.appointments.map(mapAppointment);
-  const backendVehicules = vehiclesQuery.data?.vehicles.map(mapVehicle);
-  const backendReclamations = complaintsQuery.data?.complaints.map(mapComplaint);
-  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? [];
 
-  const myRdvs = backendRdvs ?? rdvs.filter((r) => r.clientId === currentClientId);
+  const myRdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? [];
   const upcoming = myRdvs
     .filter((r) => r.statut === "Confirme" || r.statut === "EnAttente")
     .sort((a, b) => +new Date(a.date) - +new Date(b.date));
-  const myVehs = backendVehicules ?? vehicules.filter((v) => v.clientId === currentClientId);
-  const openRecs = (backendReclamations ?? reclamations.filter((r) => r.clientId === currentClientId)).filter(
+  const myVehs = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? [];
+  const openRecs = (complaintsQuery.data?.complaints.map(mapComplaint) ?? []).filter(
     (r) => r.statut !== "Resolue",
   );
 
@@ -68,14 +83,21 @@ function ClientDashboard() {
       <section className="grid gap-4 sm:grid-cols-3">
         <StatCard icon={Calendar} label="RDV à venir" value={upcoming.length} />
         <StatCard icon={Car} label="Mes véhicules" value={myVehs.length} />
-        <StatCard icon={MessageSquareWarning} label="Réclamations ouvertes" value={openRecs.length} />
+        <StatCard
+          icon={MessageSquareWarning}
+          label="Réclamations ouvertes"
+          value={openRecs.length}
+        />
       </section>
 
       {/* Upcoming */}
       <section>
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-display text-lg font-semibold">Prochains rendez-vous</h2>
-          <Link to="/client/historique" className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-yellow">
+          <Link
+            to="/client/historique"
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-yellow"
+          >
             Tout voir <ArrowRight size={12} />
           </Link>
         </div>
@@ -85,7 +107,10 @@ function ClientDashboard() {
             title="Aucun rendez-vous"
             description="Réservez une visite dans l'agence Renault de votre choix."
             action={
-              <Link to="/client/rdv-nouveau" className="inline-flex items-center gap-2 rounded-md bg-yellow px-4 py-2 font-medium text-renault-black">
+              <Link
+                to="/client/rdv-nouveau"
+                className="inline-flex items-center gap-2 rounded-md bg-yellow px-4 py-2 font-medium text-renault-black"
+              >
                 <Plus size={14} /> Créer un RDV
               </Link>
             }
@@ -93,7 +118,13 @@ function ClientDashboard() {
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {upcoming.slice(0, 4).map((r) => (
-              <RDVCard key={r.id} rdv={r} to={`/client/rdv/${r.id}`} vehicules={myVehs} agences={agences} />
+              <RDVCard
+                key={r.id}
+                rdv={r}
+                to={`/client/rdv/${r.id}`}
+                vehicules={myVehs}
+                agences={agences}
+              />
             ))}
           </div>
         )}
@@ -110,13 +141,17 @@ function ClientDashboard() {
                 <div className="flex items-center justify-between">
                   <VehiclePlate value={v.immatriculation} />
                   {v.isPrincipal && (
-                    <span className="text-[10px] uppercase tracking-widest text-yellow">Principal</span>
+                    <span className="text-[10px] uppercase tracking-widest text-yellow">
+                      Principal
+                    </span>
                   )}
                 </div>
                 <div className="mt-3 font-display text-base font-semibold">
                   {v.marque} {v.modele}
                 </div>
-                <div className="text-xs text-muted-foreground">Année {v.annee} · {ag.ville}</div>
+                <div className="text-xs text-muted-foreground">
+                  Année {v.annee} · {ag.ville}
+                </div>
               </div>
             );
           })}
@@ -126,7 +161,15 @@ function ClientDashboard() {
   );
 }
 
-function StatCard({ icon: Icon, label, value }: { icon: typeof Calendar; label: string; value: number }) {
+function StatCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: typeof Calendar;
+  label: string;
+  value: number;
+}) {
   return (
     <div className="hover-lift rounded-xl border border-border bg-card p-5">
       <div className="flex items-center justify-between">

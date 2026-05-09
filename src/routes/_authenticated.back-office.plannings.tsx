@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { SEED_AGENCES, useDataStore } from "@/stores/dataStore";
 import { useAuth } from "@/context/AuthContext";
 import { listAgencies, listAppointments } from "@/lib/backend-api";
 import { mapAgency, mapAppointment } from "@/lib/backend-mappers";
@@ -14,12 +13,21 @@ export const Route = createFileRoute("/_authenticated/back-office/plannings")({
 
 function ABOPlannings() {
   const { loading } = useAuth();
-  const localRdvs = useDataStore((s) => s.rdvs);
-  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
-  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
-  const allRdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? localRdvs;
-  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
-  const [agenceId, setAgenceId] = useState(agences[0]?.id ?? SEED_AGENCES[0].id);
+  const appointmentsQuery = useQuery({
+    queryKey: ["appointments"],
+    queryFn: listAppointments,
+    enabled: !loading,
+    retry: false,
+  });
+  const agenciesQuery = useQuery({
+    queryKey: ["agencies"],
+    queryFn: listAgencies,
+    enabled: !loading,
+    retry: false,
+  });
+  const allRdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? [];
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? [];
+  const [agenceId, setAgenceId] = useState(agences[0]?.id ?? "");
   const rdvs = allRdvs.filter((r) => r.agenceId === agenceId);
 
   useEffect(() => {
@@ -36,14 +44,24 @@ function ABOPlannings() {
   const occupied = (d: Date, h: string) =>
     rdvs.find((r) => {
       const rd = new Date(r.date);
-      return rd.toDateString() === d.toDateString() && rd.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) === h;
+      return (
+        rd.toDateString() === d.toDateString() &&
+        rd.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) === h
+      );
     });
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
-      <select value={agenceId} onChange={(e) => setAgenceId(e.target.value)}
-        className="rounded-md border border-input bg-background px-3 py-2 text-sm">
-        {agences.map((a) => <option key={a.id} value={a.id}>{a.nom}</option>)}
+      <select
+        value={agenceId}
+        onChange={(e) => setAgenceId(e.target.value)}
+        className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+      >
+        {agences.map((a) => (
+          <option key={a.id} value={a.id}>
+            {a.nom}
+          </option>
+        ))}
       </select>
 
       <div className="overflow-x-auto rounded-xl border border-border bg-card">
@@ -53,7 +71,11 @@ function ABOPlannings() {
               <th className="px-3 py-3 text-left">Heure</th>
               {days.map((d) => (
                 <th key={d.toISOString()} className="px-3 py-3 text-left">
-                  {d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}
+                  {d.toLocaleDateString("fr-FR", {
+                    weekday: "short",
+                    day: "numeric",
+                    month: "short",
+                  })}
                 </th>
               ))}
             </tr>

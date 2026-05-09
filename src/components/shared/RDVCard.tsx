@@ -5,8 +5,6 @@ import { VehiclePlate } from "./VehiclePlate";
 import type { RendezVous } from "@/types";
 import type { Agence, Vehicule } from "@/types";
 import { fmtDateLong } from "@/lib/format";
-import { useDataStore } from "@/stores/dataStore";
-import { SEED_AGENCES } from "@/stores/dataStore";
 
 export function RDVCard({
   rdv,
@@ -19,15 +17,16 @@ export function RDVCard({
   vehicules?: Vehicule[];
   agences?: Agence[];
 }) {
-  const storeVehicules = useDataStore((s) => s.vehicules);
-  const vehicules = providedVehicules ?? storeVehicules;
-  const agences = providedAgences ?? SEED_AGENCES;
+  const vehicules = providedVehicules ?? [];
+  const agences = providedAgences ?? [];
   const vehicule = vehicules.find((v) => v.id === rdv.vehiculeId);
   const agence = agences.find((a) => a.id === rdv.agenceId);
 
   const Wrapper = to
     ? ({ children }: { children: React.ReactNode }) => (
-        <Link to={to} className="block">{children}</Link>
+        <Link to={to} className="block">
+          {children}
+        </Link>
       )
     : ({ children }: { children: React.ReactNode }) => <>{children}</>;
 
@@ -42,9 +41,7 @@ export function RDVCard({
               </span>
               <StatusBadge statut={rdv.statut} />
             </div>
-            <div className="font-display text-lg font-semibold">
-              {fmtDateLong(rdv.date)}
-            </div>
+            <div className="font-display text-lg font-semibold">{fmtDateLong(rdv.date)}</div>
             <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5">
                 <MapPin size={14} className="text-yellow" />

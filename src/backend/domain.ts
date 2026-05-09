@@ -65,4 +65,3 @@ export interface BackendNotification extends AuditFields {
   message: string;
   read: boolean;
 }
-

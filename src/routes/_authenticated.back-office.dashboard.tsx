@@ -1,8 +1,18 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Calendar, Building2, MessageSquareWarning, Users } from "lucide-react";
-import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Cell,
+} from "recharts";
 import { useQuery } from "@tanstack/react-query";
-import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
 import { useAuth } from "@/context/AuthContext";
 import { listAgencies, listAppointments, listClients, listComplaints } from "@/lib/backend-api";
 import { mapAgency, mapAppointment, mapComplaint, mapUserClient } from "@/lib/backend-mappers";
@@ -13,15 +23,34 @@ export const Route = createFileRoute("/_authenticated/back-office/dashboard")({
 
 function ABODash() {
   const { loading } = useAuth();
-  const { rdvs: localRdvs, clients: localClients, reclamations: localReclamations } = useDataStore();
-  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
-  const complaintsQuery = useQuery({ queryKey: ["complaints"], queryFn: listComplaints, enabled: !loading, retry: false });
-  const clientsQuery = useQuery({ queryKey: ["clients"], queryFn: listClients, enabled: !loading, retry: false });
-  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
-  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? localRdvs;
-  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? localClients;
-  const reclamations = complaintsQuery.data?.complaints.map(mapComplaint) ?? localReclamations;
-  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
+  const appointmentsQuery = useQuery({
+    queryKey: ["appointments"],
+    queryFn: listAppointments,
+    enabled: !loading,
+    retry: false,
+  });
+  const complaintsQuery = useQuery({
+    queryKey: ["complaints"],
+    queryFn: listComplaints,
+    enabled: !loading,
+    retry: false,
+  });
+  const clientsQuery = useQuery({
+    queryKey: ["clients"],
+    queryFn: listClients,
+    enabled: !loading,
+    retry: false,
+  });
+  const agenciesQuery = useQuery({
+    queryKey: ["agencies"],
+    queryFn: listAgencies,
+    enabled: !loading,
+    retry: false,
+  });
+  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? [];
+  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? [];
+  const reclamations = complaintsQuery.data?.complaints.map(mapComplaint) ?? [];
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? [];
   const open = reclamations.filter((r) => r.statut !== "Resolue");
 
   const trend = Array.from({ length: 7 }).map((_, i) => {
@@ -39,7 +68,10 @@ function ABODash() {
       }).length,
     };
   });
-  const byAgence = agences.map((a) => ({ name: a.ville, total: rdvs.filter((r) => r.agenceId === a.id).length }));
+  const byAgence = agences.map((a) => ({
+    name: a.ville,
+    total: rdvs.filter((r) => r.agenceId === a.id).length,
+  }));
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
@@ -65,8 +97,20 @@ function ABODash() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="day" stroke="var(--muted-foreground)" fontSize={11} />
                 <YAxis stroke="var(--muted-foreground)" fontSize={11} />
-                <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
-                <Area type="monotone" dataKey="rdvs" stroke="var(--renault-yellow)" fill="url(#g1)" strokeWidth={2} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="rdvs"
+                  stroke="var(--renault-yellow)"
+                  fill="url(#g1)"
+                  strokeWidth={2}
+                />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -80,9 +124,17 @@ function ABODash() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={10} />
                 <YAxis stroke="var(--muted-foreground)" fontSize={11} />
-                <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--popover)",
+                    border: "1px solid var(--border)",
+                    borderRadius: 8,
+                  }}
+                />
                 <Bar dataKey="total" radius={[6, 6, 0, 0]}>
-                  {byAgence.map((_, i) => <Cell key={i} fill="var(--renault-yellow)" />)}
+                  {byAgence.map((_, i) => (
+                    <Cell key={i} fill="var(--renault-yellow)" />
+                  ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

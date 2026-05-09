@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
-import { useDataStore } from "@/stores/dataStore";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
 import { listVehicles } from "@/lib/backend-api";
 import { mapVehicle } from "@/lib/backend-mappers";
@@ -12,9 +11,13 @@ export const Route = createFileRoute("/_authenticated/client/profil")({
 
 function Profil() {
   const { profile, user, loading } = useAuth();
-  const { vehicules, currentClientId } = useDataStore();
-  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
-  const mine = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? vehicules.filter((v) => v.clientId === currentClientId);
+  const vehiclesQuery = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: listVehicles,
+    enabled: !loading,
+    retry: false,
+  });
+  const mine = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? [];
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -32,9 +35,14 @@ function Profil() {
         <h2 className="font-display text-lg font-semibold">Mes véhicules</h2>
         <div className="mt-4 space-y-2">
           {mine.map((v) => (
-            <div key={v.id} className="flex items-center justify-between rounded-md border border-border bg-background/50 p-3">
+            <div
+              key={v.id}
+              className="flex items-center justify-between rounded-md border border-border bg-background/50 p-3"
+            >
               <div>
-                <div className="font-display font-semibold">{v.marque} {v.modele}</div>
+                <div className="font-display font-semibold">
+                  {v.marque} {v.modele}
+                </div>
                 <div className="text-xs text-muted-foreground">Année {v.annee}</div>
               </div>
               <VehiclePlate value={v.immatriculation} />
@@ -50,7 +58,9 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <div className="text-[11px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <div className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">{value || "—"}</div>
+      <div className="mt-1 rounded-md border border-input bg-background px-3 py-2 text-sm">
+        {value || "—"}
+      </div>
     </div>
   );
 }

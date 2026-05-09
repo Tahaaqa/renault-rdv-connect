@@ -1,7 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
 import { fmtDateLong } from "@/lib/format";
@@ -15,15 +14,34 @@ export const Route = createFileRoute("/_authenticated/back-office/rdv")({
 
 function ABORdv() {
   const { loading } = useAuth();
-  const { rdvs: localRdvs, clients: localClients, vehicules: localVehicules } = useDataStore();
-  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
-  const clientsQuery = useQuery({ queryKey: ["clients"], queryFn: listClients, enabled: !loading, retry: false });
-  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
-  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
-  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? localRdvs;
-  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? localClients;
-  const vehicules = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? localVehicules;
-  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
+  const appointmentsQuery = useQuery({
+    queryKey: ["appointments"],
+    queryFn: listAppointments,
+    enabled: !loading,
+    retry: false,
+  });
+  const clientsQuery = useQuery({
+    queryKey: ["clients"],
+    queryFn: listClients,
+    enabled: !loading,
+    retry: false,
+  });
+  const vehiclesQuery = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: listVehicles,
+    enabled: !loading,
+    retry: false,
+  });
+  const agenciesQuery = useQuery({
+    queryKey: ["agencies"],
+    queryFn: listAgencies,
+    enabled: !loading,
+    retry: false,
+  });
+  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? [];
+  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? [];
+  const vehicules = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? [];
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? [];
   const [agence, setAgence] = useState<string>("all");
   const list = [...rdvs]
     .filter((r) => agence === "all" || r.agenceId === agence)
@@ -32,10 +50,17 @@ function ABORdv() {
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <select value={agence} onChange={(e) => setAgence(e.target.value)}
-          className="rounded-md border border-input bg-background px-3 py-2 text-sm">
+        <select
+          value={agence}
+          onChange={(e) => setAgence(e.target.value)}
+          className="rounded-md border border-input bg-background px-3 py-2 text-sm"
+        >
           <option value="all">Toutes les agences</option>
-          {agences.map((a) => <option key={a.id} value={a.id}>{a.nom}</option>)}
+          {agences.map((a) => (
+            <option key={a.id} value={a.id}>
+              {a.nom}
+            </option>
+          ))}
         </select>
         <span className="text-sm text-muted-foreground">{list.length} RDV</span>
       </div>
@@ -60,11 +85,17 @@ function ABORdv() {
               return (
                 <tr key={r.id} className="border-t border-border hover:bg-background/40">
                   <td className="px-4 py-3 font-mono text-xs">{r.reference}</td>
-                  <td className="px-4 py-3">{c?.prenom} {c?.nom}</td>
+                  <td className="px-4 py-3">
+                    {c?.prenom} {c?.nom}
+                  </td>
                   <td className="px-4 py-3 text-xs">{fmtDateLong(r.date)}</td>
                   <td className="px-4 py-3">{ag?.ville}</td>
-                  <td className="px-4 py-3">{v && <VehiclePlate value={v.immatriculation} size="sm" />}</td>
-                  <td className="px-4 py-3"><StatusBadge statut={r.statut} /></td>
+                  <td className="px-4 py-3">
+                    {v && <VehiclePlate value={v.immatriculation} size="sm" />}
+                  </td>
+                  <td className="px-4 py-3">
+                    <StatusBadge statut={r.statut} />
+                  </td>
                 </tr>
               );
             })}

@@ -26,7 +26,11 @@ export function consumeAuthStateCookie(): string | undefined {
   return state;
 }
 
-export function setTokenCookies(tokens: { accessToken: string; idToken?: string; expiresAt: number }): void {
+export function setTokenCookies(tokens: {
+  accessToken: string;
+  idToken?: string;
+  expiresAt: number;
+}): void {
   const maxAge = Math.max(0, Math.floor((tokens.expiresAt - Date.now()) / 1000));
 
   setCookie(ACCESS_TOKEN_COOKIE, tokens.accessToken, {
@@ -54,4 +58,3 @@ export function clearTokenCookies(): void {
   deleteCookie(ACCESS_TOKEN_COOKIE, { path: "/" });
   deleteCookie(ID_TOKEN_COOKIE, { path: "/" });
 }
-

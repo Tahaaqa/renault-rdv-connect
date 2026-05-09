@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Calendar } from "lucide-react";
-import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
 import { RDVCard } from "@/components/shared/RDVCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import type { StatutRDV } from "@/types";
@@ -24,18 +23,30 @@ const FILTERS: { key: "Tous" | StatutRDV; label: string }[] = [
 
 function Historique() {
   const { loading } = useAuth();
-  const { rdvs, currentClientId } = useDataStore();
-  const storeVehicules = useDataStore((s) => s.vehicules);
-  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
-  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
-  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
+  const appointmentsQuery = useQuery({
+    queryKey: ["appointments"],
+    queryFn: listAppointments,
+    enabled: !loading,
+    retry: false,
+  });
+  const vehiclesQuery = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: listVehicles,
+    enabled: !loading,
+    retry: false,
+  });
+  const agenciesQuery = useQuery({
+    queryKey: ["agencies"],
+    queryFn: listAgencies,
+    enabled: !loading,
+    retry: false,
+  });
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("Tous");
-  const backendRdvs = appointmentsQuery.data?.appointments.map(mapAppointment);
-  const vehicules = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? storeVehicules;
-  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
-  const mine = backendRdvs ?? rdvs.filter((r) => r.clientId === currentClientId);
+  const vehicules = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? [];
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? [];
+  const mine = appointmentsQuery.data?.appointments.map(mapAppointment) ?? [];
   const list = (filter === "Tous" ? mine : mine.filter((r) => r.statut === filter)).sort(
-    (a, b) => +new Date(b.date) - +new Date(a.date)
+    (a, b) => +new Date(b.date) - +new Date(a.date),
   );
 
   return (
@@ -46,7 +57,9 @@ function Historique() {
             key={f.key}
             onClick={() => setFilter(f.key)}
             className={`rounded-full px-3.5 py-1.5 text-xs font-medium transition ${
-              filter === f.key ? "bg-yellow text-renault-black" : "border border-border text-muted-foreground hover:text-foreground"
+              filter === f.key
+                ? "bg-yellow text-renault-black"
+                : "border border-border text-muted-foreground hover:text-foreground"
             }`}
           >
             {f.label}
@@ -55,11 +68,21 @@ function Historique() {
       </div>
 
       {list.length === 0 ? (
-        <EmptyState icon={Calendar} title="Aucun rendez-vous trouvé" description="Ajustez les filtres ou créez un nouveau RDV." />
+        <EmptyState
+          icon={Calendar}
+          title="Aucun rendez-vous trouvé"
+          description="Ajustez les filtres ou créez un nouveau RDV."
+        />
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {list.map((r) => (
-            <RDVCard key={r.id} rdv={r} to={`/client/rdv/${r.id}`} vehicules={vehicules} agences={agences} />
+            <RDVCard
+              key={r.id}
+              rdv={r}
+              to={`/client/rdv/${r.id}`}
+              vehicules={vehicules}
+              agences={agences}
+            />
           ))}
         </div>
       )}

@@ -98,4 +98,3 @@ export async function exchangeAuthorizationCode(
     expiresAt: Date.now() + (payload.expires_in ?? 300) * 1000,
   };
 }
-

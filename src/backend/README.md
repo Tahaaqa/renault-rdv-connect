@@ -11,6 +11,8 @@ Current status:
 - Client, front-office, and back-office screens prefer Mongo-backed `/api/*` data and fall back to the demo Zustand store when backend auth/env is unavailable.
 - Back-office can administer users, user roles, FO agency assignment, and agencies.
 - Front-office complaints are scoped to the assigned FO agency on read and update.
+- **Cloudflare env propagation** is handled via `env-store.ts` — the Worker `fetch()` stashes bindings so `getBackendConfig()` works in both local dev and CF Workers.
+- **Zod-based payload validation** is used for all API mutations in `app-routes.server.ts`, replacing manual `assertString`/`assertNumber` helpers.
 
 Next implementation step:
 

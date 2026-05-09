@@ -18,7 +18,8 @@ export async function createAppointment(
 ): Promise<BackendAppointment> {
   const isClientCreatingOwnAppointment =
     session.principal.roles.includes("client") && session.userId === input.clientUserId;
-  const isStaff = session.principal.roles.includes("agent_fo") || session.principal.roles.includes("agent_bo");
+  const isStaff =
+    session.principal.roles.includes("agent_fo") || session.principal.roles.includes("agent_bo");
 
   if (!isClientCreatingOwnAppointment && !isStaff) {
     throw new Response("Forbidden", { status: 403 });
@@ -51,10 +52,12 @@ export async function changeAppointmentStatus(
   appointmentId: EntityId,
   status: StatutRDV,
 ): Promise<BackendAppointment> {
-  if (!session.principal.roles.includes("agent_fo") && !session.principal.roles.includes("agent_bo")) {
+  if (
+    !session.principal.roles.includes("agent_fo") &&
+    !session.principal.roles.includes("agent_bo")
+  ) {
     throw new Response("Forbidden", { status: 403 });
   }
 
   return repos.appointments.updateStatus(appointmentId, status);
 }
-

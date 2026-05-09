@@ -76,9 +76,15 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
       { title: "Renault RDV — Gérez vos rendez-vous" },
-      { name: "description", content: "Le portail officiel des agences Renault Tunisie pour clients et agents." },
+      {
+        name: "description",
+        content: "Le portail officiel des agences Renault Tunisie pour clients et agents.",
+      },
       { property: "og:title", content: "Renault RDV — Tunisie" },
-      { property: "og:description", content: "Prenez et gérez vos rendez-vous Renault en quelques clics." },
+      {
+        property: "og:description",
+        content: "Prenez et gérez vos rendez-vous Renault en quelques clics.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],

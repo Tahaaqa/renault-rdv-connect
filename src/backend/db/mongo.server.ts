@@ -21,7 +21,14 @@ import type {
   VehicleRepository,
 } from "@/backend/repositories/contracts";
 import type { AppRole, StatutRDV, StatutReclamation } from "@/types";
-import { DEFAULT_AGENCIES } from "@/backend/db/seed";
+import {
+  DEFAULT_AGENCIES,
+  DEFAULT_USERS,
+  DEFAULT_VEHICLES,
+  DEFAULT_APPOINTMENTS,
+  DEFAULT_COMPLAINTS,
+  DEFAULT_NOTIFICATIONS,
+} from "@/backend/db/seed";
 
 interface MongoAuditFields {
   createdAt: Date;
@@ -212,12 +219,9 @@ function buildUserRepository(collection: Collection<MongoUser>): UserRepository 
       return user ? userToDomain(user) : null;
     },
     async listAll() {
-      return (
-        await collection
-          .find()
-          .sort({ lastName: 1, firstName: 1, email: 1 })
-          .toArray()
-      ).map(userToDomain);
+      return (await collection.find().sort({ lastName: 1, firstName: 1, email: 1 }).toArray()).map(
+        userToDomain,
+      );
     },
     async listClients() {
       return (
@@ -329,7 +333,10 @@ function buildVehicleRepository(collection: Collection<MongoVehicle>): VehicleRe
   return {
     async listByOwner(ownerUserId) {
       return (
-        await collection.find({ ownerUserId: toObjectId(ownerUserId) }).sort({ createdAt: -1 }).toArray()
+        await collection
+          .find({ ownerUserId: toObjectId(ownerUserId) })
+          .sort({ createdAt: -1 })
+          .toArray()
       ).map(vehicleToDomain);
     },
     async listAll() {
@@ -358,7 +365,9 @@ function buildVehicleRepository(collection: Collection<MongoVehicle>): VehicleRe
   };
 }
 
-function buildAppointmentRepository(collection: Collection<MongoAppointment>): AppointmentRepository {
+function buildAppointmentRepository(
+  collection: Collection<MongoAppointment>,
+): AppointmentRepository {
   const sortByDate = { startsAt: -1 as const };
 
   return {
@@ -368,12 +377,18 @@ function buildAppointmentRepository(collection: Collection<MongoAppointment>): A
     },
     async listForClient(clientUserId) {
       return (
-        await collection.find({ clientUserId: toObjectId(clientUserId) }).sort(sortByDate).toArray()
+        await collection
+          .find({ clientUserId: toObjectId(clientUserId) })
+          .sort(sortByDate)
+          .toArray()
       ).map(appointmentToDomain);
     },
     async listForAgency(agencyId) {
       return (
-        await collection.find({ agencyId: toObjectId(agencyId) }).sort(sortByDate).toArray()
+        await collection
+          .find({ agencyId: toObjectId(agencyId) })
+          .sort(sortByDate)
+          .toArray()
       ).map(appointmentToDomain);
     },
     async listAll() {
@@ -423,7 +438,10 @@ function buildComplaintRepository(
     },
     async listForClient(clientUserId) {
       return (
-        await collection.find({ clientUserId: toObjectId(clientUserId) }).sort({ createdAt: -1 }).toArray()
+        await collection
+          .find({ clientUserId: toObjectId(clientUserId) })
+          .sort({ createdAt: -1 })
+          .toArray()
       ).map(complaintToDomain);
     },
     async listForAgency(agencyId) {
@@ -479,11 +497,16 @@ function buildComplaintRepository(
   };
 }
 
-function buildNotificationRepository(collection: Collection<MongoNotification>): NotificationRepository {
+function buildNotificationRepository(
+  collection: Collection<MongoNotification>,
+): NotificationRepository {
   return {
     async listForUser(userId) {
       return (
-        await collection.find({ userId: toObjectId(userId) }).sort({ createdAt: -1 }).toArray()
+        await collection
+          .find({ userId: toObjectId(userId) })
+          .sort({ createdAt: -1 })
+          .toArray()
       ).map(notificationToDomain);
     },
     async markAllRead(userId) {
@@ -513,35 +536,175 @@ export async function ensureMongoIndexes(config: MongoConfig): Promise<void> {
   ]);
 }
 
-export async function seedDefaultData(config: MongoConfig): Promise<{ agencies: number }> {
+export async function seedDefaultData(config: MongoConfig): Promise<{
+  agencies: number;
+  users: number;
+  vehicles: number;
+  appointments: number;
+  complaints: number;
+  notifications: number;
+}> {
   await ensureMongoIndexes(config);
   const db = await getDb(config);
-  const agencies = db.collection<MongoAgency>(COLLECTIONS.agencies);
   const now = new Date();
+
+  const agenciesCol = db.collection<MongoAgency>(COLLECTIONS.agencies);
+  const usersCol = db.collection<MongoUser>(COLLECTIONS.users);
+  const vehiclesCol = db.collection<MongoVehicle>(COLLECTIONS.vehicles);
+  const appointmentsCol = db.collection<MongoAppointment>(COLLECTIONS.appointments);
+  const complaintsCol = db.collection<MongoComplaint>(COLLECTIONS.complaints);
+  const notificationsCol = db.collection<MongoNotification>(COLLECTIONS.notifications);
+
+  // --- Agencies ---
+  const agencyIds: ObjectId[] = [];
   let insertedAgencies = 0;
-
   for (const agency of DEFAULT_AGENCIES) {
-    const result = await agencies.updateOne(
-      { name: agency.name, city: agency.city },
-      {
-        $setOnInsert: {
-          _id: new ObjectId(),
-          name: agency.name,
-          city: agency.city,
-          address: agency.address,
-          phone: agency.phone,
-          location: null,
-          createdAt: now,
-          updatedAt: now,
-        },
-      },
-      { upsert: true },
-    );
-
-    if (result.upsertedCount > 0) insertedAgencies += result.upsertedCount;
+    const existing = await agenciesCol.findOne({ name: agency.name, city: agency.city });
+    if (existing) {
+      agencyIds.push(existing._id);
+    } else {
+      const _id = new ObjectId();
+      await agenciesCol.insertOne({
+        _id,
+        name: agency.name,
+        city: agency.city,
+        address: agency.address,
+        phone: agency.phone,
+        location: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+      agencyIds.push(_id);
+      insertedAgencies++;
+    }
   }
 
-  return { agencies: insertedAgencies };
+  // --- Users ---
+  const userIds: ObjectId[] = [];
+  let insertedUsers = 0;
+  for (const user of DEFAULT_USERS) {
+    const existing = await usersCol.findOne({ keycloakSubject: user.keycloakSubject });
+    if (existing) {
+      userIds.push(existing._id);
+    } else {
+      const _id = new ObjectId();
+      await usersCol.insertOne({
+        _id,
+        keycloakSubject: user.keycloakSubject,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phone: user.phone,
+        roles: user.roles,
+        agencyId: user.roles.includes("agent_fo") ? agencyIds[0] : null,
+        createdAt: now,
+        updatedAt: now,
+      });
+      userIds.push(_id);
+      insertedUsers++;
+    }
+  }
+
+  // --- Vehicles ---
+  const vehicleIds: ObjectId[] = [];
+  let insertedVehicles = 0;
+  for (const v of DEFAULT_VEHICLES) {
+    const existing = await vehiclesCol.findOne({ plateNumber: v.plateNumber });
+    if (existing) {
+      vehicleIds.push(existing._id);
+    } else {
+      const _id = new ObjectId();
+      await vehiclesCol.insertOne({
+        _id,
+        ownerUserId: userIds[v.ownerIndex],
+        plateNumber: v.plateNumber,
+        brand: v.brand,
+        model: v.model,
+        year: v.year,
+        isPrimary: v.isPrimary,
+        createdAt: now,
+        updatedAt: now,
+      });
+      vehicleIds.push(_id);
+      insertedVehicles++;
+    }
+  }
+
+  // --- Appointments ---
+  const appointmentIds: ObjectId[] = [];
+  let insertedAppointments = 0;
+  const existingAppointmentCount = await appointmentsCol.countDocuments();
+  if (existingAppointmentCount === 0) {
+    for (let i = 0; i < DEFAULT_APPOINTMENTS.length; i++) {
+      const appt = DEFAULT_APPOINTMENTS[i];
+      const startsAt = new Date();
+      startsAt.setDate(startsAt.getDate() + appt.dayOffset);
+      startsAt.setHours(appt.hour, 0, 0, 0);
+
+      const _id = new ObjectId();
+      await appointmentsCol.insertOne({
+        _id,
+        reference: `RDV-${now.getFullYear()}-${String(i + 1).padStart(5, "0")}`,
+        clientUserId: userIds[appt.clientIndex],
+        agencyId: agencyIds[appt.agencyIndex],
+        vehicleId: vehicleIds[appt.vehicleIndex],
+        startsAt,
+        status: appt.status,
+        notes: appt.notes ?? null,
+        createdByUserId: null,
+        createdAt: now,
+        updatedAt: now,
+      });
+      appointmentIds.push(_id);
+      insertedAppointments++;
+    }
+  }
+
+  // --- Complaints ---
+  let insertedComplaints = 0;
+  const existingComplaintCount = await complaintsCol.countDocuments();
+  if (existingComplaintCount === 0) {
+    for (const c of DEFAULT_COMPLAINTS) {
+      await complaintsCol.insertOne({
+        _id: new ObjectId(),
+        clientUserId: userIds[c.clientIndex],
+        appointmentId: c.appointmentIndex != null ? appointmentIds[c.appointmentIndex] : null,
+        description: c.description,
+        status: c.status,
+        resolution: c.resolution ?? null,
+        createdAt: now,
+        updatedAt: now,
+      });
+      insertedComplaints++;
+    }
+  }
+
+  // --- Notifications ---
+  let insertedNotifications = 0;
+  const existingNotificationCount = await notificationsCol.countDocuments();
+  if (existingNotificationCount === 0) {
+    for (const n of DEFAULT_NOTIFICATIONS) {
+      await notificationsCol.insertOne({
+        _id: new ObjectId(),
+        userId: userIds[n.userIndex],
+        type: n.type,
+        message: n.message,
+        read: n.read,
+        createdAt: now,
+        updatedAt: now,
+      });
+      insertedNotifications++;
+    }
+  }
+
+  return {
+    agencies: insertedAgencies,
+    users: insertedUsers,
+    vehicles: insertedVehicles,
+    appointments: insertedAppointments,
+    complaints: insertedComplaints,
+    notifications: insertedNotifications,
+  };
 }
 
 export async function getBackendRepositories(config: MongoConfig): Promise<BackendRepositories> {
@@ -555,8 +718,13 @@ export async function getBackendRepositories(config: MongoConfig): Promise<Backe
     agencies: buildAgencyRepository(db.collection<MongoAgency>(COLLECTIONS.agencies)),
     vehicles: buildVehicleRepository(db.collection<MongoVehicle>(COLLECTIONS.vehicles)),
     appointments: buildAppointmentRepository(appointments),
-    complaints: buildComplaintRepository(db.collection<MongoComplaint>(COLLECTIONS.complaints), appointments),
-    notifications: buildNotificationRepository(db.collection<MongoNotification>(COLLECTIONS.notifications)),
+    complaints: buildComplaintRepository(
+      db.collection<MongoComplaint>(COLLECTIONS.complaints),
+      appointments,
+    ),
+    notifications: buildNotificationRepository(
+      db.collection<MongoNotification>(COLLECTIONS.notifications),
+    ),
   };
 
   return cachedRepositories;

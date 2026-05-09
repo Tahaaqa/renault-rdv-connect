@@ -1,13 +1,25 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { ChevronLeft, ChevronRight, Check, MapPin, Car, Calendar as CalendarIcon, FileText, ShieldCheck } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  MapPin,
+  Car,
+  Calendar as CalendarIcon,
+  FileText,
+  ShieldCheck,
+} from "lucide-react";
 import { toast } from "sonner";
 import { useStepperStore } from "@/stores/rdvStepperStore";
-import { useDataStore, SEED_AGENCES, getCurrentClient } from "@/stores/dataStore";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
 import { fmtDateLong } from "@/lib/format";
-import { createAppointment as createBackendAppointment, listAgencies, listVehicles } from "@/lib/backend-api";
+import {
+  createAppointment as createBackendAppointment,
+  listAgencies,
+  listVehicles,
+} from "@/lib/backend-api";
 import { mapAgency, mapVehicle } from "@/lib/backend-mappers";
 import { useAuth } from "@/context/AuthContext";
 
@@ -27,20 +39,27 @@ function NouveauRDV() {
   const s = useStepperStore();
   const navigate = useNavigate();
   const { loading } = useAuth();
-  const createRDV = useDataStore((st) => st.createRDV);
-  const client = getCurrentClient();
-  const localVehs = useDataStore((st) => st.vehicules).filter((v) => v.clientId === client.id);
-  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
-  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
+  const agenciesQuery = useQuery({
+    queryKey: ["agencies"],
+    queryFn: listAgencies,
+    enabled: !loading,
+    retry: false,
+  });
+  const vehiclesQuery = useQuery({
+    queryKey: ["vehicles"],
+    queryFn: listVehicles,
+    enabled: !loading,
+    retry: false,
+  });
   const createAppointmentMutation = useMutation({ mutationFn: createBackendAppointment });
-  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
-  const myVehs = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? localVehs;
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? [];
+  const myVehs = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? [];
 
   const canNext =
     (s.step === 1 && !!s.agence) ||
     (s.step === 2 && !!s.vehicule) ||
     (s.step === 3 && !!s.date && !!s.heure) ||
-    (s.step === 4) ||
+    s.step === 4 ||
     (s.step === 5 && s.termsAccepted);
 
   const submit = async () => {
@@ -53,20 +72,11 @@ function NouveauRDV() {
         startsAt: dt.toISOString(),
         notes: s.notes,
       });
-      toast.success("Rendez-vous cree", { description: appointment.reference });
+      toast.success("Rendez-vous créé", { description: appointment.reference });
       s.reset();
       navigate({ to: `/client/rdv/${appointment.id}` });
     } catch {
-      const rdv = createRDV({
-        clientId: client.id,
-        agenceId: s.agence.id,
-        vehiculeId: s.vehicule.id,
-        date: dt.toISOString(),
-        notes: s.notes,
-      });
-      toast.success("Rendez-vous cree localement", { description: rdv.reference });
-      s.reset();
-      navigate({ to: `/client/rdv/${rdv.id}` });
+      toast.error("Erreur lors de la création du rendez-vous");
     }
   };
 
@@ -80,16 +90,25 @@ function NouveauRDV() {
             const done = s.step > st.n;
             return (
               <div key={st.n} className="flex flex-1 items-center gap-2">
-                <div className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border text-sm font-bold ${
-                  done ? "border-yellow bg-yellow text-renault-black" :
-                  active ? "border-yellow text-yellow" : "border-border text-muted-foreground"
-                }`}>
+                <div
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border text-sm font-bold ${
+                    done
+                      ? "border-yellow bg-yellow text-renault-black"
+                      : active
+                        ? "border-yellow text-yellow"
+                        : "border-border text-muted-foreground"
+                  }`}
+                >
                   {done ? <Check size={16} /> : st.n}
                 </div>
-                <span className={`hidden text-sm font-medium md:inline ${active ? "text-foreground" : "text-muted-foreground"}`}>
+                <span
+                  className={`hidden text-sm font-medium md:inline ${active ? "text-foreground" : "text-muted-foreground"}`}
+                >
                   {st.label}
                 </span>
-                {i < STEPS.length - 1 && <div className={`h-px flex-1 ${done ? "bg-yellow" : "bg-border"}`} />}
+                {i < STEPS.length - 1 && (
+                  <div className={`h-px flex-1 ${done ? "bg-yellow" : "bg-border"}`} />
+                )}
               </div>
             );
           })}
@@ -101,20 +120,28 @@ function NouveauRDV() {
         {s.step === 1 && (
           <div>
             <h2 className="font-display text-xl font-semibold">Choisissez votre agence</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Sélectionnez l'agence Renault la plus proche.</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Sélectionnez l'agence Renault la plus proche.
+            </p>
             <div className="mt-6 grid gap-3 md:grid-cols-2">
               {agences.map((a) => {
                 const active = s.agence?.id === a.id;
                 return (
-                  <button key={a.id} onClick={() => s.setAgence(a)} className={`text-left rounded-xl border p-4 transition hover-lift ${
-                    active ? "border-yellow bg-yellow/5" : "border-border bg-card"
-                  }`}>
+                  <button
+                    key={a.id}
+                    onClick={() => s.setAgence(a)}
+                    className={`text-left rounded-xl border p-4 transition hover-lift ${
+                      active ? "border-yellow bg-yellow/5" : "border-border bg-card"
+                    }`}
+                  >
                     <div className="flex items-start justify-between">
                       <div className="font-display font-semibold">{a.nom}</div>
                       {active && <Check size={16} className="text-yellow" />}
                     </div>
                     <div className="mt-1 text-sm text-muted-foreground">{a.adresse}</div>
-                    <div className="mt-2 text-xs font-mono text-muted-foreground">{a.telephone}</div>
+                    <div className="mt-2 text-xs font-mono text-muted-foreground">
+                      {a.telephone}
+                    </div>
                   </button>
                 );
               })}
@@ -129,14 +156,20 @@ function NouveauRDV() {
               {myVehs.map((v) => {
                 const active = s.vehicule?.id === v.id;
                 return (
-                  <button key={v.id} onClick={() => s.setVehicule(v)} className={`text-left rounded-xl border p-4 transition hover-lift ${
-                    active ? "border-yellow bg-yellow/5" : "border-border"
-                  }`}>
+                  <button
+                    key={v.id}
+                    onClick={() => s.setVehicule(v)}
+                    className={`text-left rounded-xl border p-4 transition hover-lift ${
+                      active ? "border-yellow bg-yellow/5" : "border-border"
+                    }`}
+                  >
                     <div className="flex items-center justify-between">
                       <VehiclePlate value={v.immatriculation} />
                       {active && <Check size={16} className="text-yellow" />}
                     </div>
-                    <div className="mt-3 font-display font-semibold">{v.marque} {v.modele}</div>
+                    <div className="mt-3 font-display font-semibold">
+                      {v.marque} {v.modele}
+                    </div>
                     <div className="text-xs text-muted-foreground">Année {v.annee}</div>
                   </button>
                 );
@@ -150,7 +183,9 @@ function NouveauRDV() {
             <h2 className="font-display text-xl font-semibold">Choisissez votre créneau</h2>
             <div className="mt-6 grid gap-6 md:grid-cols-2">
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-widest text-muted-foreground">Date</label>
+                <label className="mb-2 block text-xs uppercase tracking-widest text-muted-foreground">
+                  Date
+                </label>
                 <input
                   type="date"
                   min={new Date().toISOString().slice(0, 10)}
@@ -160,18 +195,30 @@ function NouveauRDV() {
                 />
               </div>
               <div>
-                <label className="mb-2 block text-xs uppercase tracking-widest text-muted-foreground">Heure</label>
+                <label className="mb-2 block text-xs uppercase tracking-widest text-muted-foreground">
+                  Heure
+                </label>
                 <div className="grid grid-cols-4 gap-2">
-                  {["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"].map((h) => {
-                    const active = s.heure === h;
-                    return (
-                      <button key={h} onClick={() => s.setSlot(s.date ?? new Date().toISOString().slice(0,10), h)} className={`rounded-md border px-2 py-2 text-sm font-mono ${
-                        active ? "border-yellow bg-yellow text-renault-black" : "border-border hover:border-yellow/50"
-                      }`}>
-                        {h}
-                      </button>
-                    );
-                  })}
+                  {["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"].map(
+                    (h) => {
+                      const active = s.heure === h;
+                      return (
+                        <button
+                          key={h}
+                          onClick={() =>
+                            s.setSlot(s.date ?? new Date().toISOString().slice(0, 10), h)
+                          }
+                          className={`rounded-md border px-2 py-2 text-sm font-mono ${
+                            active
+                              ? "border-yellow bg-yellow text-renault-black"
+                              : "border-border hover:border-yellow/50"
+                          }`}
+                        >
+                          {h}
+                        </button>
+                      );
+                    },
+                  )}
                 </div>
               </div>
             </div>
@@ -181,7 +228,9 @@ function NouveauRDV() {
         {s.step === 4 && (
           <div>
             <h2 className="font-display text-xl font-semibold">Notes additionnelles</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Décrivez le motif de votre visite (optionnel).</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Décrivez le motif de votre visite (optionnel).
+            </p>
             <textarea
               value={s.notes}
               onChange={(e) => s.setNotes(e.target.value)}
@@ -197,8 +246,18 @@ function NouveauRDV() {
             <h2 className="font-display text-xl font-semibold">Confirmation</h2>
             <div className="mt-6 space-y-3 rounded-lg border border-border bg-background/50 p-4">
               <Row label="Agence" value={s.agence?.nom} />
-              <Row label="Véhicule" value={s.vehicule ? `${s.vehicule.marque} ${s.vehicule.modele} (${s.vehicule.immatriculation})` : ""} />
-              <Row label="Date & heure" value={s.date && s.heure ? fmtDateLong(`${s.date}T${s.heure}:00`) : ""} />
+              <Row
+                label="Véhicule"
+                value={
+                  s.vehicule
+                    ? `${s.vehicule.marque} ${s.vehicule.modele} (${s.vehicule.immatriculation})`
+                    : ""
+                }
+              />
+              <Row
+                label="Date & heure"
+                value={s.date && s.heure ? fmtDateLong(`${s.date}T${s.heure}:00`) : ""}
+              />
               {s.notes && <Row label="Notes" value={s.notes} />}
             </div>
             <label className="mt-6 flex items-start gap-3 text-sm">
@@ -209,7 +268,8 @@ function NouveauRDV() {
                 className="mt-0.5 h-4 w-4 accent-yellow"
               />
               <span className="text-muted-foreground">
-                J'accepte que mes informations soient utilisées pour traiter ce rendez-vous selon les conditions du service Renault RDV.
+                J'accepte que mes informations soient utilisées pour traiter ce rendez-vous selon
+                les conditions du service Renault RDV.
               </span>
             </label>
           </div>

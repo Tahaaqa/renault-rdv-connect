@@ -56,7 +56,10 @@ function LoginPage() {
           </div>
         </div>
 
-        <Link to="/" className="absolute bottom-8 left-12 text-xs text-white/40 hover:text-yellow transition">
+        <Link
+          to="/"
+          className="absolute bottom-8 left-12 text-xs text-white/40 hover:text-yellow transition"
+        >
           Retour a l'accueil
         </Link>
       </div>

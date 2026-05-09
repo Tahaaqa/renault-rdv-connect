@@ -56,6 +56,6 @@ export const useStepperStore = create<StepperState>()(
           termsAccepted: false,
         }),
     }),
-    { name: "renault-stepper" }
-  )
+    { name: "renault-stepper" },
+  ),
 );

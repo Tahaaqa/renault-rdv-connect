@@ -1,10 +1,7 @@
 import { createRemoteJWKSet, jwtVerify } from "jose";
 
 import type { KeycloakConfig } from "@/backend/config";
-import {
-  mapKeycloakClaimsToPrincipal,
-  type KeycloakTokenClaims,
-} from "@/backend/auth/keycloak";
+import { mapKeycloakClaimsToPrincipal, type KeycloakTokenClaims } from "@/backend/auth/keycloak";
 import type { AuthenticatedPrincipal } from "@/backend/auth/session";
 
 const jwksCache = new Map<string, ReturnType<typeof createRemoteJWKSet>>();
@@ -29,4 +26,3 @@ export async function verifyKeycloakAccessToken(
 
   return mapKeycloakClaimsToPrincipal(payload as KeycloakTokenClaims, config.clientId);
 }
-

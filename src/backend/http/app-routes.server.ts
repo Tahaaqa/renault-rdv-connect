@@ -4,80 +4,92 @@ import { createAppointment } from "@/backend/services/appointments";
 import { requireSessionFromRequest } from "@/backend/auth/request-session.server";
 import { jsonResponse } from "@/backend/http/json";
 import type { AppSession } from "@/backend/auth/session";
-import type { AppRole, StatutReclamation, StatutRDV } from "@/types";
+import type { AppRole } from "@/types";
+import { z, type ZodType } from "zod";
 
-interface CreateAppointmentPayload {
-  clientUserId?: string;
-  agencyId?: string;
-  vehicleId?: string;
-  startsAt?: string;
-  notes?: string | null;
-}
+// ---------------------------------------------------------------------------
+// Zod Schemas — replace the old manual interfaces + assert helpers
+// ---------------------------------------------------------------------------
 
-interface CreateVehiclePayload {
-  ownerUserId?: string;
-  plateNumber?: string;
-  brand?: string;
-  model?: string;
-  year?: number;
-  isPrimary?: boolean;
-}
+const appRoleSchema = z.enum(["client", "agent_fo", "agent_bo"]);
 
-interface CreateComplaintPayload {
-  clientUserId?: string;
-  appointmentId?: string | null;
-  description?: string;
-}
+const CreateAppointmentSchema = z.object({
+  clientUserId: z.string().min(1, "clientUserId is required").optional(),
+  agencyId: z.string().min(1, "agencyId is required"),
+  vehicleId: z.string().min(1, "vehicleId is required"),
+  startsAt: z.string().min(1, "startsAt is required"),
+  notes: z.string().nullable().optional(),
+});
 
-interface UpdateComplaintPayload {
-  status?: StatutReclamation;
-  resolution?: string | null;
-}
+const CreateVehicleSchema = z.object({
+  ownerUserId: z.string().min(1, "ownerUserId is required").optional(),
+  plateNumber: z.string().min(1, "plateNumber is required"),
+  brand: z.string().min(1, "brand is required"),
+  model: z.string().min(1, "model is required"),
+  year: z.number().finite(),
+  isPrimary: z.boolean().default(false),
+});
 
-interface UpdateAppointmentStatusPayload {
-  status?: StatutRDV;
-}
+const CreateComplaintSchema = z.object({
+  clientUserId: z.string().min(1, "clientUserId is required").optional(),
+  appointmentId: z.string().nullable().optional(),
+  description: z.string().min(1, "description is required"),
+});
 
-interface UpdateUserPayload {
-  firstName?: string | null;
-  lastName?: string | null;
-  phone?: string | null;
-  roles?: AppRole[];
-  agencyId?: string | null;
-}
+const UpdateComplaintSchema = z.object({
+  status: z.enum(["Ouverte", "EnCours", "Resolue", "Escaladee"]),
+  resolution: z.string().nullable().optional(),
+});
 
-interface AgencyPayload {
-  name?: string;
-  city?: string;
-  address?: string;
-  phone?: string;
-  location?: { lat: number; lng: number } | null;
-}
+const UpdateAppointmentStatusSchema = z.object({
+  status: z.enum(["EnAttente", "Confirme", "Annule", "Termine"]),
+});
 
-async function readJson<T>(request: Request): Promise<T> {
+const UpdateUserSchema = z.object({
+  firstName: z.string().nullable().optional(),
+  lastName: z.string().nullable().optional(),
+  phone: z.string().nullable().optional(),
+  roles: z.array(appRoleSchema).min(1).optional(),
+  agencyId: z.string().nullable().optional(),
+});
+
+const AgencySchema = z.object({
+  name: z.string().min(1, "name is required"),
+  city: z.string().min(1, "city is required"),
+  address: z.string().min(1, "address is required"),
+  phone: z.string().min(1, "phone is required"),
+  location: z.object({ lat: z.number(), lng: z.number() }).nullable().optional(),
+});
+
+const AgencyPatchSchema = AgencySchema.partial();
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+async function parsePayload<T>(request: Request, schema: ZodType<T>): Promise<T> {
+  let body: unknown;
   try {
-    return (await request.json()) as T;
+    body = await request.json();
   } catch {
     throw new Response("Invalid JSON", { status: 400 });
   }
-}
 
-function assertString(value: unknown, field: string): string {
-  if (typeof value !== "string" || value.trim() === "") {
-    throw new Response(`Missing field: ${field}`, { status: 400 });
+  const result = schema.safeParse(body);
+  if (!result.success) {
+    throw new Response(
+      JSON.stringify({ error: "Validation failed", issues: result.error.flatten().fieldErrors }),
+      { status: 400, headers: { "content-type": "application/json" } },
+    );
   }
-  return value;
-}
-
-function assertNumber(value: unknown, field: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    throw new Response(`Missing field: ${field}`, { status: 400 });
-  }
-  return value;
+  return result.data;
 }
 
 function requireStaff(session: AppSession): void {
-  if (!session.principal.roles.includes("agent_fo") && !session.principal.roles.includes("agent_bo")) {
+  if (
+    !session.principal.roles.includes("agent_fo") &&
+    !session.principal.roles.includes("agent_bo")
+  ) {
     throw new Response("Forbidden", { status: 403 });
   }
 }
@@ -86,19 +98,6 @@ function requireBackOffice(session: AppSession): void {
   if (!session.principal.roles.includes("agent_bo")) {
     throw new Response("Forbidden", { status: 403 });
   }
-}
-
-function assertRoles(value: unknown): AppRole[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new Response("Missing field: roles", { status: 400 });
-  }
-
-  const valid = new Set<AppRole>(["client", "agent_fo", "agent_bo"]);
-  const roles = value.filter((role): role is AppRole => typeof role === "string" && valid.has(role as AppRole));
-  if (roles.length !== value.length) {
-    throw new Response("Invalid roles", { status: 400 });
-  }
-  return Array.from(new Set(roles));
 }
 
 async function getRepositories() {
@@ -117,12 +116,12 @@ async function handleAgencies(request: Request): Promise<Response> {
   if (request.method === "POST") {
     const session = await requireSessionFromRequest(request);
     requireBackOffice(session);
-    const payload = await readJson<AgencyPayload>(request);
+    const payload = await parsePayload(request, AgencySchema);
     const agency = await repos.agencies.create({
-      name: assertString(payload.name, "name"),
-      city: assertString(payload.city, "city"),
-      address: assertString(payload.address, "address"),
-      phone: assertString(payload.phone, "phone"),
+      name: payload.name,
+      city: payload.city,
+      address: payload.address,
+      phone: payload.phone,
       location: payload.location ?? null,
     });
     return jsonResponse({ agency }, { status: 201 });
@@ -134,17 +133,13 @@ async function handleAgencies(request: Request): Promise<Response> {
 async function handleAgencyUpdate(request: Request, agencyId: string): Promise<Response> {
   const session = await requireSessionFromRequest(request);
   requireBackOffice(session);
-  const payload = await readJson<AgencyPayload>(request);
+  const patch = await parsePayload(request, AgencyPatchSchema);
   const repos = await getRepositories();
-  const patch: AgencyPayload = {};
 
-  if ("name" in payload) patch.name = assertString(payload.name, "name");
-  if ("city" in payload) patch.city = assertString(payload.city, "city");
-  if ("address" in payload) patch.address = assertString(payload.address, "address");
-  if ("phone" in payload) patch.phone = assertString(payload.phone, "phone");
-  if ("location" in payload) patch.location = payload.location ?? null;
-
-  const agency = await repos.agencies.update(agencyId, patch);
+  const agency = await repos.agencies.update(agencyId, {
+    ...patch,
+    location: patch.location ?? null,
+  });
   return jsonResponse({ agency });
 }
 
@@ -165,16 +160,21 @@ async function handleUsers(request: Request): Promise<Response> {
 async function handleUserUpdate(request: Request, userId: string): Promise<Response> {
   const session = await requireSessionFromRequest(request);
   requireBackOffice(session);
-  const payload = await readJson<UpdateUserPayload>(request);
+  const payload = await parsePayload(request, UpdateUserSchema);
   const repos = await getRepositories();
-  const roles = payload.roles ? assertRoles(payload.roles) : undefined;
-  const patch: UpdateUserPayload = {};
+  const patch: {
+    firstName?: string | null;
+    lastName?: string | null;
+    phone?: string | null;
+    roles?: AppRole[];
+    agencyId?: string | null;
+  } = {};
   if ("firstName" in payload) patch.firstName = payload.firstName ?? null;
   if ("lastName" in payload) patch.lastName = payload.lastName ?? null;
   if ("phone" in payload) patch.phone = payload.phone ?? null;
-  if (roles) {
-    patch.roles = roles;
-    patch.agencyId = roles.includes("agent_fo") ? payload.agencyId ?? null : null;
+  if (payload.roles) {
+    patch.roles = payload.roles;
+    patch.agencyId = payload.roles.includes("agent_fo") ? (payload.agencyId ?? null) : null;
   } else if ("agencyId" in payload) {
     patch.agencyId = payload.agencyId ?? null;
   }
@@ -203,17 +203,20 @@ async function handleAppointments(request: Request): Promise<Response> {
   }
 
   if (request.method === "POST") {
-    const payload = await readJson<CreateAppointmentPayload>(request);
+    const payload = await parsePayload(request, CreateAppointmentSchema);
     const clientUserId =
       session.principal.roles.includes("agent_fo") || session.principal.roles.includes("agent_bo")
-        ? assertString(payload.clientUserId, "clientUserId")
+        ? (payload.clientUserId ??
+          (() => {
+            throw new Response("Missing field: clientUserId", { status: 400 });
+          })())
         : session.userId;
 
     const appointment = await createAppointment(repos, session, {
       clientUserId,
-      agencyId: assertString(payload.agencyId, "agencyId"),
-      vehicleId: assertString(payload.vehicleId, "vehicleId"),
-      startsAt: assertString(payload.startsAt, "startsAt"),
+      agencyId: payload.agencyId,
+      vehicleId: payload.vehicleId,
+      startsAt: payload.startsAt,
       notes: payload.notes ?? null,
     });
 
@@ -226,10 +229,9 @@ async function handleAppointments(request: Request): Promise<Response> {
 async function handleAppointmentStatus(request: Request, appointmentId: string): Promise<Response> {
   const session = await requireSessionFromRequest(request);
   requireStaff(session);
-  const payload = await readJson<UpdateAppointmentStatusPayload>(request);
-  const status = assertString(payload.status, "status") as StatutRDV;
+  const payload = await parsePayload(request, UpdateAppointmentStatusSchema);
   const repos = await getRepositories();
-  const appointment = await repos.appointments.updateStatus(appointmentId, status);
+  const appointment = await repos.appointments.updateStatus(appointmentId, payload.status);
   return jsonResponse({ appointment });
 }
 
@@ -238,26 +240,32 @@ async function handleVehicles(request: Request): Promise<Response> {
   const repos = await getRepositories();
 
   if (request.method === "GET") {
-    if (session.principal.roles.includes("agent_bo") || session.principal.roles.includes("agent_fo")) {
+    if (
+      session.principal.roles.includes("agent_bo") ||
+      session.principal.roles.includes("agent_fo")
+    ) {
       return jsonResponse({ vehicles: await repos.vehicles.listAll() });
     }
     return jsonResponse({ vehicles: await repos.vehicles.listByOwner(session.userId) });
   }
 
   if (request.method === "POST") {
-    const payload = await readJson<CreateVehiclePayload>(request);
+    const payload = await parsePayload(request, CreateVehicleSchema);
     const ownerUserId =
       session.principal.roles.includes("agent_fo") || session.principal.roles.includes("agent_bo")
-        ? assertString(payload.ownerUserId, "ownerUserId")
+        ? (payload.ownerUserId ??
+          (() => {
+            throw new Response("Missing field: ownerUserId", { status: 400 });
+          })())
         : session.userId;
 
     const vehicle = await repos.vehicles.create({
       ownerUserId,
-      plateNumber: assertString(payload.plateNumber, "plateNumber"),
-      brand: assertString(payload.brand, "brand"),
-      model: assertString(payload.model, "model"),
-      year: assertNumber(payload.year, "year"),
-      isPrimary: Boolean(payload.isPrimary),
+      plateNumber: payload.plateNumber,
+      brand: payload.brand,
+      model: payload.model,
+      year: payload.year,
+      isPrimary: payload.isPrimary ?? false,
     });
 
     return jsonResponse({ vehicle }, { status: 201 });
@@ -287,16 +295,19 @@ async function handleComplaints(request: Request): Promise<Response> {
   }
 
   if (request.method === "POST") {
-    const payload = await readJson<CreateComplaintPayload>(request);
+    const payload = await parsePayload(request, CreateComplaintSchema);
     const clientUserId =
       session.principal.roles.includes("agent_fo") || session.principal.roles.includes("agent_bo")
-        ? assertString(payload.clientUserId, "clientUserId")
+        ? (payload.clientUserId ??
+          (() => {
+            throw new Response("Missing field: clientUserId", { status: 400 });
+          })())
         : session.userId;
 
     const complaint = await repos.complaints.create({
       clientUserId,
       appointmentId: payload.appointmentId ?? null,
-      description: assertString(payload.description, "description"),
+      description: payload.description,
     });
 
     return jsonResponse({ complaint }, { status: 201 });
@@ -308,7 +319,7 @@ async function handleComplaints(request: Request): Promise<Response> {
 async function handleComplaintUpdate(request: Request, complaintId: string): Promise<Response> {
   const session = await requireSessionFromRequest(request);
   requireStaff(session);
-  const payload = await readJson<UpdateComplaintPayload>(request);
+  const payload = await parsePayload(request, UpdateComplaintSchema);
   const repos = await getRepositories();
 
   if (!session.principal.roles.includes("agent_bo")) {
@@ -325,7 +336,7 @@ async function handleComplaintUpdate(request: Request, complaintId: string): Pro
   }
 
   const complaint = await repos.complaints.updateStatus(complaintId, {
-    status: assertString(payload.status, "status") as StatutReclamation,
+    status: payload.status,
     resolution: payload.resolution ?? null,
   });
   return jsonResponse({ complaint });
@@ -393,7 +404,10 @@ export async function handleAppRoute(request: Request): Promise<Response | undef
     return handleUserUpdate(request, userMatch[1]);
   }
 
-  if (url.pathname === "/api/appointments" && (request.method === "GET" || request.method === "POST")) {
+  if (
+    url.pathname === "/api/appointments" &&
+    (request.method === "GET" || request.method === "POST")
+  ) {
     return handleAppointments(request);
   }
 
@@ -406,7 +420,10 @@ export async function handleAppRoute(request: Request): Promise<Response | undef
     return handleVehicles(request);
   }
 
-  if (url.pathname === "/api/complaints" && (request.method === "GET" || request.method === "POST")) {
+  if (
+    url.pathname === "/api/complaints" &&
+    (request.method === "GET" || request.method === "POST")
+  ) {
     return handleComplaints(request);
   }
 
@@ -415,7 +432,10 @@ export async function handleAppRoute(request: Request): Promise<Response | undef
     return handleComplaintUpdate(request, complaintMatch[1]);
   }
 
-  if (url.pathname === "/api/notifications" && (request.method === "GET" || request.method === "POST")) {
+  if (
+    url.pathname === "/api/notifications" &&
+    (request.method === "GET" || request.method === "POST")
+  ) {
     return handleNotifications(request);
   }
 

@@ -11,12 +11,7 @@ function serializeCookie(
   value: string,
   options: { maxAge?: number; expires?: Date } = {},
 ): string {
-  const parts = [
-    `${name}=${encodeURIComponent(value)}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-  ];
+  const parts = [`${name}=${encodeURIComponent(value)}`, "Path=/", "HttpOnly", "SameSite=Lax"];
 
   if (isProduction) parts.push("Secure");
   if (options.maxAge !== undefined) parts.push(`Max-Age=${options.maxAge}`);
@@ -68,4 +63,3 @@ export function clearCookie(name: string): string {
 export function clearTokenCookies(): string[] {
   return [clearCookie(ACCESS_TOKEN_COOKIE), clearCookie(ID_TOKEN_COOKIE)];
 }
-

@@ -104,7 +104,10 @@ export function AppSidebar() {
                           <it.icon size={18} />
                           <span>{it.label}</span>
                           {active && (
-                            <span className="ml-auto h-5 w-0.5 rounded-full bg-yellow" aria-hidden />
+                            <span
+                              className="ml-auto h-5 w-0.5 rounded-full bg-yellow"
+                              aria-hidden
+                            />
                           )}
                         </Link>
                       </SidebarMenuButton>
