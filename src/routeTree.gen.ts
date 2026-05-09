@@ -18,6 +18,16 @@ import { Route as AuthenticatedClientProfilRouteImport } from './routes/_authent
 import { Route as AuthenticatedClientHistoriqueRouteImport } from './routes/_authenticated.client.historique'
 import { Route as AuthenticatedClientFaqRouteImport } from './routes/_authenticated.client.faq'
 import { Route as AuthenticatedClientDashboardRouteImport } from './routes/_authenticated.client.dashboard'
+import { Route as AuthenticatedBackOfficeStatistiquesRouteImport } from './routes/_authenticated.back-office.statistiques'
+import { Route as AuthenticatedBackOfficeReclamationsRouteImport } from './routes/_authenticated.back-office.reclamations'
+import { Route as AuthenticatedBackOfficeRdvRouteImport } from './routes/_authenticated.back-office.rdv'
+import { Route as AuthenticatedBackOfficePlanningsRouteImport } from './routes/_authenticated.back-office.plannings'
+import { Route as AuthenticatedBackOfficeDashboardRouteImport } from './routes/_authenticated.back-office.dashboard'
+import { Route as AuthenticatedBackOfficeAgencesRouteImport } from './routes/_authenticated.back-office.agences'
+import { Route as AuthenticatedAgentFoReclamationsRouteImport } from './routes/_authenticated.agent-fo.reclamations'
+import { Route as AuthenticatedAgentFoRdvNouveauRouteImport } from './routes/_authenticated.agent-fo.rdv-nouveau'
+import { Route as AuthenticatedAgentFoDashboardRouteImport } from './routes/_authenticated.agent-fo.dashboard'
+import { Route as AuthenticatedAgentFoClientsRouteImport } from './routes/_authenticated.agent-fo.clients'
 import { Route as AuthenticatedClientRdvIdRouteImport } from './routes/_authenticated.client.rdv.$id'
 
 const LoginRoute = LoginRouteImport.update({
@@ -69,6 +79,66 @@ const AuthenticatedClientDashboardRoute =
     path: '/client/dashboard',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedBackOfficeStatistiquesRoute =
+  AuthenticatedBackOfficeStatistiquesRouteImport.update({
+    id: '/back-office/statistiques',
+    path: '/back-office/statistiques',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBackOfficeReclamationsRoute =
+  AuthenticatedBackOfficeReclamationsRouteImport.update({
+    id: '/back-office/reclamations',
+    path: '/back-office/reclamations',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBackOfficeRdvRoute =
+  AuthenticatedBackOfficeRdvRouteImport.update({
+    id: '/back-office/rdv',
+    path: '/back-office/rdv',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBackOfficePlanningsRoute =
+  AuthenticatedBackOfficePlanningsRouteImport.update({
+    id: '/back-office/plannings',
+    path: '/back-office/plannings',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBackOfficeDashboardRoute =
+  AuthenticatedBackOfficeDashboardRouteImport.update({
+    id: '/back-office/dashboard',
+    path: '/back-office/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBackOfficeAgencesRoute =
+  AuthenticatedBackOfficeAgencesRouteImport.update({
+    id: '/back-office/agences',
+    path: '/back-office/agences',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAgentFoReclamationsRoute =
+  AuthenticatedAgentFoReclamationsRouteImport.update({
+    id: '/agent-fo/reclamations',
+    path: '/agent-fo/reclamations',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAgentFoRdvNouveauRoute =
+  AuthenticatedAgentFoRdvNouveauRouteImport.update({
+    id: '/agent-fo/rdv-nouveau',
+    path: '/agent-fo/rdv-nouveau',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAgentFoDashboardRoute =
+  AuthenticatedAgentFoDashboardRouteImport.update({
+    id: '/agent-fo/dashboard',
+    path: '/agent-fo/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedAgentFoClientsRoute =
+  AuthenticatedAgentFoClientsRouteImport.update({
+    id: '/agent-fo/clients',
+    path: '/agent-fo/clients',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedClientRdvIdRoute =
   AuthenticatedClientRdvIdRouteImport.update({
     id: '/client/rdv/$id',
@@ -79,6 +149,16 @@ const AuthenticatedClientRdvIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/agent-fo/clients': typeof AuthenticatedAgentFoClientsRoute
+  '/agent-fo/dashboard': typeof AuthenticatedAgentFoDashboardRoute
+  '/agent-fo/rdv-nouveau': typeof AuthenticatedAgentFoRdvNouveauRoute
+  '/agent-fo/reclamations': typeof AuthenticatedAgentFoReclamationsRoute
+  '/back-office/agences': typeof AuthenticatedBackOfficeAgencesRoute
+  '/back-office/dashboard': typeof AuthenticatedBackOfficeDashboardRoute
+  '/back-office/plannings': typeof AuthenticatedBackOfficePlanningsRoute
+  '/back-office/rdv': typeof AuthenticatedBackOfficeRdvRoute
+  '/back-office/reclamations': typeof AuthenticatedBackOfficeReclamationsRoute
+  '/back-office/statistiques': typeof AuthenticatedBackOfficeStatistiquesRoute
   '/client/dashboard': typeof AuthenticatedClientDashboardRoute
   '/client/faq': typeof AuthenticatedClientFaqRoute
   '/client/historique': typeof AuthenticatedClientHistoriqueRoute
@@ -90,6 +170,16 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/agent-fo/clients': typeof AuthenticatedAgentFoClientsRoute
+  '/agent-fo/dashboard': typeof AuthenticatedAgentFoDashboardRoute
+  '/agent-fo/rdv-nouveau': typeof AuthenticatedAgentFoRdvNouveauRoute
+  '/agent-fo/reclamations': typeof AuthenticatedAgentFoReclamationsRoute
+  '/back-office/agences': typeof AuthenticatedBackOfficeAgencesRoute
+  '/back-office/dashboard': typeof AuthenticatedBackOfficeDashboardRoute
+  '/back-office/plannings': typeof AuthenticatedBackOfficePlanningsRoute
+  '/back-office/rdv': typeof AuthenticatedBackOfficeRdvRoute
+  '/back-office/reclamations': typeof AuthenticatedBackOfficeReclamationsRoute
+  '/back-office/statistiques': typeof AuthenticatedBackOfficeStatistiquesRoute
   '/client/dashboard': typeof AuthenticatedClientDashboardRoute
   '/client/faq': typeof AuthenticatedClientFaqRoute
   '/client/historique': typeof AuthenticatedClientHistoriqueRoute
@@ -103,6 +193,16 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/agent-fo/clients': typeof AuthenticatedAgentFoClientsRoute
+  '/_authenticated/agent-fo/dashboard': typeof AuthenticatedAgentFoDashboardRoute
+  '/_authenticated/agent-fo/rdv-nouveau': typeof AuthenticatedAgentFoRdvNouveauRoute
+  '/_authenticated/agent-fo/reclamations': typeof AuthenticatedAgentFoReclamationsRoute
+  '/_authenticated/back-office/agences': typeof AuthenticatedBackOfficeAgencesRoute
+  '/_authenticated/back-office/dashboard': typeof AuthenticatedBackOfficeDashboardRoute
+  '/_authenticated/back-office/plannings': typeof AuthenticatedBackOfficePlanningsRoute
+  '/_authenticated/back-office/rdv': typeof AuthenticatedBackOfficeRdvRoute
+  '/_authenticated/back-office/reclamations': typeof AuthenticatedBackOfficeReclamationsRoute
+  '/_authenticated/back-office/statistiques': typeof AuthenticatedBackOfficeStatistiquesRoute
   '/_authenticated/client/dashboard': typeof AuthenticatedClientDashboardRoute
   '/_authenticated/client/faq': typeof AuthenticatedClientFaqRoute
   '/_authenticated/client/historique': typeof AuthenticatedClientHistoriqueRoute
@@ -116,6 +216,16 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/login'
+    | '/agent-fo/clients'
+    | '/agent-fo/dashboard'
+    | '/agent-fo/rdv-nouveau'
+    | '/agent-fo/reclamations'
+    | '/back-office/agences'
+    | '/back-office/dashboard'
+    | '/back-office/plannings'
+    | '/back-office/rdv'
+    | '/back-office/reclamations'
+    | '/back-office/statistiques'
     | '/client/dashboard'
     | '/client/faq'
     | '/client/historique'
@@ -127,6 +237,16 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/login'
+    | '/agent-fo/clients'
+    | '/agent-fo/dashboard'
+    | '/agent-fo/rdv-nouveau'
+    | '/agent-fo/reclamations'
+    | '/back-office/agences'
+    | '/back-office/dashboard'
+    | '/back-office/plannings'
+    | '/back-office/rdv'
+    | '/back-office/reclamations'
+    | '/back-office/statistiques'
     | '/client/dashboard'
     | '/client/faq'
     | '/client/historique'
@@ -139,6 +259,16 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/login'
+    | '/_authenticated/agent-fo/clients'
+    | '/_authenticated/agent-fo/dashboard'
+    | '/_authenticated/agent-fo/rdv-nouveau'
+    | '/_authenticated/agent-fo/reclamations'
+    | '/_authenticated/back-office/agences'
+    | '/_authenticated/back-office/dashboard'
+    | '/_authenticated/back-office/plannings'
+    | '/_authenticated/back-office/rdv'
+    | '/_authenticated/back-office/reclamations'
+    | '/_authenticated/back-office/statistiques'
     | '/_authenticated/client/dashboard'
     | '/_authenticated/client/faq'
     | '/_authenticated/client/historique'
@@ -219,6 +349,76 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedClientDashboardRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/back-office/statistiques': {
+      id: '/_authenticated/back-office/statistiques'
+      path: '/back-office/statistiques'
+      fullPath: '/back-office/statistiques'
+      preLoaderRoute: typeof AuthenticatedBackOfficeStatistiquesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/back-office/reclamations': {
+      id: '/_authenticated/back-office/reclamations'
+      path: '/back-office/reclamations'
+      fullPath: '/back-office/reclamations'
+      preLoaderRoute: typeof AuthenticatedBackOfficeReclamationsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/back-office/rdv': {
+      id: '/_authenticated/back-office/rdv'
+      path: '/back-office/rdv'
+      fullPath: '/back-office/rdv'
+      preLoaderRoute: typeof AuthenticatedBackOfficeRdvRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/back-office/plannings': {
+      id: '/_authenticated/back-office/plannings'
+      path: '/back-office/plannings'
+      fullPath: '/back-office/plannings'
+      preLoaderRoute: typeof AuthenticatedBackOfficePlanningsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/back-office/dashboard': {
+      id: '/_authenticated/back-office/dashboard'
+      path: '/back-office/dashboard'
+      fullPath: '/back-office/dashboard'
+      preLoaderRoute: typeof AuthenticatedBackOfficeDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/back-office/agences': {
+      id: '/_authenticated/back-office/agences'
+      path: '/back-office/agences'
+      fullPath: '/back-office/agences'
+      preLoaderRoute: typeof AuthenticatedBackOfficeAgencesRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/agent-fo/reclamations': {
+      id: '/_authenticated/agent-fo/reclamations'
+      path: '/agent-fo/reclamations'
+      fullPath: '/agent-fo/reclamations'
+      preLoaderRoute: typeof AuthenticatedAgentFoReclamationsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/agent-fo/rdv-nouveau': {
+      id: '/_authenticated/agent-fo/rdv-nouveau'
+      path: '/agent-fo/rdv-nouveau'
+      fullPath: '/agent-fo/rdv-nouveau'
+      preLoaderRoute: typeof AuthenticatedAgentFoRdvNouveauRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/agent-fo/dashboard': {
+      id: '/_authenticated/agent-fo/dashboard'
+      path: '/agent-fo/dashboard'
+      fullPath: '/agent-fo/dashboard'
+      preLoaderRoute: typeof AuthenticatedAgentFoDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/agent-fo/clients': {
+      id: '/_authenticated/agent-fo/clients'
+      path: '/agent-fo/clients'
+      fullPath: '/agent-fo/clients'
+      preLoaderRoute: typeof AuthenticatedAgentFoClientsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/client/rdv/$id': {
       id: '/_authenticated/client/rdv/$id'
       path: '/client/rdv/$id'
@@ -230,6 +430,16 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAgentFoClientsRoute: typeof AuthenticatedAgentFoClientsRoute
+  AuthenticatedAgentFoDashboardRoute: typeof AuthenticatedAgentFoDashboardRoute
+  AuthenticatedAgentFoRdvNouveauRoute: typeof AuthenticatedAgentFoRdvNouveauRoute
+  AuthenticatedAgentFoReclamationsRoute: typeof AuthenticatedAgentFoReclamationsRoute
+  AuthenticatedBackOfficeAgencesRoute: typeof AuthenticatedBackOfficeAgencesRoute
+  AuthenticatedBackOfficeDashboardRoute: typeof AuthenticatedBackOfficeDashboardRoute
+  AuthenticatedBackOfficePlanningsRoute: typeof AuthenticatedBackOfficePlanningsRoute
+  AuthenticatedBackOfficeRdvRoute: typeof AuthenticatedBackOfficeRdvRoute
+  AuthenticatedBackOfficeReclamationsRoute: typeof AuthenticatedBackOfficeReclamationsRoute
+  AuthenticatedBackOfficeStatistiquesRoute: typeof AuthenticatedBackOfficeStatistiquesRoute
   AuthenticatedClientDashboardRoute: typeof AuthenticatedClientDashboardRoute
   AuthenticatedClientFaqRoute: typeof AuthenticatedClientFaqRoute
   AuthenticatedClientHistoriqueRoute: typeof AuthenticatedClientHistoriqueRoute
@@ -240,6 +450,18 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAgentFoClientsRoute: AuthenticatedAgentFoClientsRoute,
+  AuthenticatedAgentFoDashboardRoute: AuthenticatedAgentFoDashboardRoute,
+  AuthenticatedAgentFoRdvNouveauRoute: AuthenticatedAgentFoRdvNouveauRoute,
+  AuthenticatedAgentFoReclamationsRoute: AuthenticatedAgentFoReclamationsRoute,
+  AuthenticatedBackOfficeAgencesRoute: AuthenticatedBackOfficeAgencesRoute,
+  AuthenticatedBackOfficeDashboardRoute: AuthenticatedBackOfficeDashboardRoute,
+  AuthenticatedBackOfficePlanningsRoute: AuthenticatedBackOfficePlanningsRoute,
+  AuthenticatedBackOfficeRdvRoute: AuthenticatedBackOfficeRdvRoute,
+  AuthenticatedBackOfficeReclamationsRoute:
+    AuthenticatedBackOfficeReclamationsRoute,
+  AuthenticatedBackOfficeStatistiquesRoute:
+    AuthenticatedBackOfficeStatistiquesRoute,
   AuthenticatedClientDashboardRoute: AuthenticatedClientDashboardRoute,
   AuthenticatedClientFaqRoute: AuthenticatedClientFaqRoute,
   AuthenticatedClientHistoriqueRoute: AuthenticatedClientHistoriqueRoute,
