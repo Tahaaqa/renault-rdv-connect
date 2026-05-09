@@ -1,15 +1,39 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useDataStore } from "@/stores/dataStore";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { fmtRelative } from "@/lib/format";
-import { toast } from "sonner";
+import { useAuth } from "@/context/AuthContext";
+import { listClients, listComplaints, updateComplaint } from "@/lib/backend-api";
+import { mapComplaint, mapUserClient } from "@/lib/backend-mappers";
+import type { StatutReclamation } from "@/types";
 
 export const Route = createFileRoute("/_authenticated/back-office/reclamations")({
   component: ABORecs,
 });
 
 function ABORecs() {
-  const { reclamations, clients, updateReclamation } = useDataStore();
+  const { loading } = useAuth();
+  const queryClient = useQueryClient();
+  const { reclamations: localReclamations, clients: localClients, updateReclamation } = useDataStore();
+  const complaintsQuery = useQuery({ queryKey: ["complaints"], queryFn: listComplaints, enabled: !loading, retry: false });
+  const clientsQuery = useQuery({ queryKey: ["clients"], queryFn: listClients, enabled: !loading, retry: false });
+  const reclamations = complaintsQuery.data?.complaints.map(mapComplaint) ?? localReclamations;
+  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? localClients;
+  const mutation = useMutation({
+    mutationFn: ({ id, status, resolution }: { id: string; status: StatutReclamation; resolution?: string }) =>
+      updateComplaint(id, { status, resolution }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["complaints"] }),
+    onError: (_error, input) => updateReclamation(input.id, { statut: input.status, resolution: input.resolution }),
+  });
+
+  const setStatus = (id: string, status: StatutReclamation, resolution?: string) => {
+    mutation.mutate({ id, status, resolution });
+    if (status === "Escaladee") toast.warning("Escaladee");
+    else toast.success("Resolue");
+  };
+
   return (
     <div className="mx-auto max-w-5xl space-y-3">
       {reclamations.map((r) => {
@@ -25,10 +49,10 @@ function ABORecs() {
             </div>
             <p className="mt-3 text-sm">{r.description}</p>
             <div className="mt-4 flex gap-2">
-              <button onClick={() => { updateReclamation(r.id, { statut: "Escaladee" }); toast.warning("Escaladée"); }}
+              <button onClick={() => setStatus(r.id, "Escaladee")}
                 className="rounded-md border border-destructive/50 px-3 py-1.5 text-xs text-destructive">Escalader</button>
-              <button onClick={() => { updateReclamation(r.id, { statut: "Resolue", resolution: "Résolue par le back-office" }); toast.success("Résolue"); }}
-                className="rounded-md bg-yellow px-3 py-1.5 text-xs font-semibold text-renault-black">Résoudre</button>
+              <button onClick={() => setStatus(r.id, "Resolue", "Resolue par le back-office")}
+                className="rounded-md bg-yellow px-3 py-1.5 text-xs font-semibold text-renault-black">Resoudre</button>
             </div>
           </div>
         );

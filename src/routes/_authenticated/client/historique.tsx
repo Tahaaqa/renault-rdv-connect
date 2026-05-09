@@ -1,10 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { Calendar } from "lucide-react";
-import { useDataStore } from "@/stores/dataStore";
+import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
 import { RDVCard } from "@/components/shared/RDVCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import type { StatutRDV } from "@/types";
+import { listAgencies, listAppointments, listVehicles } from "@/lib/backend-api";
+import { mapAgency, mapAppointment, mapVehicle } from "@/lib/backend-mappers";
+import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/_authenticated/client/historique")({
   component: Historique,
@@ -19,9 +23,17 @@ const FILTERS: { key: "Tous" | StatutRDV; label: string }[] = [
 ];
 
 function Historique() {
+  const { loading } = useAuth();
   const { rdvs, currentClientId } = useDataStore();
+  const storeVehicules = useDataStore((s) => s.vehicules);
+  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
+  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
+  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
   const [filter, setFilter] = useState<(typeof FILTERS)[number]["key"]>("Tous");
-  const mine = rdvs.filter((r) => r.clientId === currentClientId);
+  const backendRdvs = appointmentsQuery.data?.appointments.map(mapAppointment);
+  const vehicules = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? storeVehicules;
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
+  const mine = backendRdvs ?? rdvs.filter((r) => r.clientId === currentClientId);
   const list = (filter === "Tous" ? mine : mine.filter((r) => r.statut === filter)).sort(
     (a, b) => +new Date(b.date) - +new Date(a.date)
   );
@@ -47,7 +59,7 @@ function Historique() {
       ) : (
         <div className="grid gap-3 md:grid-cols-2">
           {list.map((r) => (
-            <RDVCard key={r.id} rdv={r} to={`/client/rdv/${r.id}`} />
+            <RDVCard key={r.id} rdv={r} to={`/client/rdv/${r.id}`} vehicules={vehicules} agences={agences} />
           ))}
         </div>
       )}

@@ -1,15 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Search } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useDataStore } from "@/stores/dataStore";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
+import { useAuth } from "@/context/AuthContext";
+import { listAppointments, listClients, listVehicles } from "@/lib/backend-api";
+import { mapAppointment, mapUserClient, mapVehicle } from "@/lib/backend-mappers";
 
 export const Route = createFileRoute("/_authenticated/agent-fo/clients")({
   component: AFOClients,
 });
 
 function AFOClients() {
-  const { clients, vehicules, rdvs } = useDataStore();
+  const { loading } = useAuth();
+  const { clients: localClients, vehicules: localVehicules, rdvs: localRdvs } = useDataStore();
+  const clientsQuery = useQuery({ queryKey: ["clients"], queryFn: listClients, enabled: !loading, retry: false });
+  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
+  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
+  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? localClients;
+  const vehicules = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? localVehicules;
+  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? localRdvs;
   const [q, setQ] = useState("");
   const filtered = clients.filter((c) =>
     `${c.prenom} ${c.nom} ${c.email} ${c.telephone}`.toLowerCase().includes(q.toLowerCase())
@@ -27,13 +38,13 @@ function AFOClients() {
         />
       </div>
 
-      <div className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="overflow-hidden rounded-xl border border-border bg-card">
         <table className="w-full text-sm">
           <thead className="bg-background/40 text-left text-[11px] uppercase tracking-widest text-muted-foreground">
             <tr>
               <th className="px-4 py-3">Client</th>
               <th className="px-4 py-3">Contact</th>
-              <th className="px-4 py-3">Véhicules</th>
+              <th className="px-4 py-3">Vehicules</th>
               <th className="px-4 py-3">RDV</th>
             </tr>
           </thead>
@@ -46,7 +57,7 @@ function AFOClients() {
                   <td className="px-4 py-3 font-display font-semibold">{c.prenom} {c.nom}</td>
                   <td className="px-4 py-3">
                     <div>{c.email}</div>
-                    <div className="text-xs text-muted-foreground">{c.telephone}</div>
+                    <div className="text-xs text-muted-foreground">{c.telephone || "-"}</div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1.5">

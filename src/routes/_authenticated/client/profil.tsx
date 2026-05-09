@@ -1,16 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
 import { useDataStore } from "@/stores/dataStore";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
+import { listVehicles } from "@/lib/backend-api";
+import { mapVehicle } from "@/lib/backend-mappers";
 
 export const Route = createFileRoute("/_authenticated/client/profil")({
   component: Profil,
 });
 
 function Profil() {
-  const { profile, user } = useAuth();
+  const { profile, user, loading } = useAuth();
   const { vehicules, currentClientId } = useDataStore();
-  const mine = vehicules.filter((v) => v.clientId === currentClientId);
+  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
+  const mine = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? vehicules.filter((v) => v.clientId === currentClientId);
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">

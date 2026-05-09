@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Check, MapPin, Car, Calendar as CalendarIcon, FileText, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -6,6 +7,9 @@ import { useStepperStore } from "@/stores/rdvStepperStore";
 import { useDataStore, SEED_AGENCES, getCurrentClient } from "@/stores/dataStore";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
 import { fmtDateLong } from "@/lib/format";
+import { createAppointment as createBackendAppointment, listAgencies, listVehicles } from "@/lib/backend-api";
+import { mapAgency, mapVehicle } from "@/lib/backend-mappers";
+import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/_authenticated/client/rdv-nouveau")({
   component: NouveauRDV,
@@ -22,9 +26,15 @@ const STEPS = [
 function NouveauRDV() {
   const s = useStepperStore();
   const navigate = useNavigate();
+  const { loading } = useAuth();
   const createRDV = useDataStore((st) => st.createRDV);
   const client = getCurrentClient();
-  const myVehs = useDataStore((st) => st.vehicules).filter((v) => v.clientId === client.id);
+  const localVehs = useDataStore((st) => st.vehicules).filter((v) => v.clientId === client.id);
+  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
+  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
+  const createAppointmentMutation = useMutation({ mutationFn: createBackendAppointment });
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
+  const myVehs = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? localVehs;
 
   const canNext =
     (s.step === 1 && !!s.agence) ||
@@ -33,19 +43,31 @@ function NouveauRDV() {
     (s.step === 4) ||
     (s.step === 5 && s.termsAccepted);
 
-  const submit = () => {
+  const submit = async () => {
     if (!s.agence || !s.vehicule || !s.date || !s.heure) return;
     const dt = new Date(`${s.date}T${s.heure}:00`);
-    const rdv = createRDV({
-      clientId: client.id,
-      agenceId: s.agence.id,
-      vehiculeId: s.vehicule.id,
-      date: dt.toISOString(),
-      notes: s.notes,
-    });
-    toast.success("Rendez-vous créé", { description: rdv.reference });
-    s.reset();
-    navigate({ to: `/client/rdv/${rdv.id}` });
+    try {
+      const { appointment } = await createAppointmentMutation.mutateAsync({
+        agencyId: s.agence.id,
+        vehicleId: s.vehicule.id,
+        startsAt: dt.toISOString(),
+        notes: s.notes,
+      });
+      toast.success("Rendez-vous cree", { description: appointment.reference });
+      s.reset();
+      navigate({ to: `/client/rdv/${appointment.id}` });
+    } catch {
+      const rdv = createRDV({
+        clientId: client.id,
+        agenceId: s.agence.id,
+        vehiculeId: s.vehicule.id,
+        date: dt.toISOString(),
+        notes: s.notes,
+      });
+      toast.success("Rendez-vous cree localement", { description: rdv.reference });
+      s.reset();
+      navigate({ to: `/client/rdv/${rdv.id}` });
+    }
   };
 
   return (
@@ -81,7 +103,7 @@ function NouveauRDV() {
             <h2 className="font-display text-xl font-semibold">Choisissez votre agence</h2>
             <p className="mt-1 text-sm text-muted-foreground">Sélectionnez l'agence Renault la plus proche.</p>
             <div className="mt-6 grid gap-3 md:grid-cols-2">
-              {SEED_AGENCES.map((a) => {
+              {agences.map((a) => {
                 const active = s.agence?.id === a.id;
                 return (
                   <button key={a.id} onClick={() => s.setAgence(a)} className={`text-left rounded-xl border p-4 transition hover-lift ${

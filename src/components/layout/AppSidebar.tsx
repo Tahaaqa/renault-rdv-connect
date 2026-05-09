@@ -67,6 +67,7 @@ const NAV: Record<AppRole, { group: string; items: Item[] }[]> = {
       items: [
         { label: "Tableau de bord", to: "/back-office/dashboard", icon: LayoutDashboard },
         { label: "Tous les RDV", to: "/back-office/rdv", icon: ClipboardList },
+        { label: "Utilisateurs", to: "/back-office/utilisateurs", icon: Users },
         { label: "Agences", to: "/back-office/agences", icon: Building2 },
         { label: "Plannings", to: "/back-office/plannings", icon: CalendarDays },
         { label: "Réclamations", to: "/back-office/reclamations", icon: MessageSquareWarning },

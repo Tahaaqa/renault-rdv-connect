@@ -1,9 +1,11 @@
 import { Bell, Moon, Sun } from "lucide-react";
 import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useUIStore } from "@/stores/uiStore";
 import { useDataStore } from "@/stores/dataStore";
 import { useAuth } from "@/context/AuthContext";
+import { listNotifications, markNotificationsRead } from "@/lib/backend-api";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,9 +22,23 @@ export function TopBar({ title }: { title?: string }) {
   const toggleTheme = useUIStore((s) => s.toggleTheme);
   const devRole = useUIStore((s) => s.devRoleOverride);
   const setDevRole = useUIStore((s) => s.setDevRole);
-  const { realRole } = useAuth();
-  const notifications = useDataStore((s) => s.notifications);
-  const markAll = useDataStore((s) => s.markAllNotificationsRead);
+  const { realRole, loading } = useAuth();
+  const queryClient = useQueryClient();
+  const localNotifications = useDataStore((s) => s.notifications);
+  const markAllLocal = useDataStore((s) => s.markAllNotificationsRead);
+  const notificationsQuery = useQuery({
+    queryKey: ["notifications"],
+    queryFn: listNotifications,
+    enabled: !loading,
+    retry: false,
+  });
+  const markReadMutation = useMutation({
+    mutationFn: markNotificationsRead,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+    onError: markAllLocal,
+  });
+  const notifications = notificationsQuery.data?.notifications ?? localNotifications;
+  const markAll = () => markReadMutation.mutate();
   const unread = notifications.filter((n) => !n.read).length;
   const [open, setOpen] = useState(false);
 

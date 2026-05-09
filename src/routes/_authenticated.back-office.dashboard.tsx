@@ -1,30 +1,53 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Calendar, Building2, MessageSquareWarning, Users } from "lucide-react";
 import { AreaChart, Area, BarChart, Bar, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Cell } from "recharts";
+import { useQuery } from "@tanstack/react-query";
 import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
+import { useAuth } from "@/context/AuthContext";
+import { listAgencies, listAppointments, listClients, listComplaints } from "@/lib/backend-api";
+import { mapAgency, mapAppointment, mapComplaint, mapUserClient } from "@/lib/backend-mappers";
 
 export const Route = createFileRoute("/_authenticated/back-office/dashboard")({
   component: ABODash,
 });
 
 function ABODash() {
-  const { rdvs, clients, reclamations } = useDataStore();
+  const { loading } = useAuth();
+  const { rdvs: localRdvs, clients: localClients, reclamations: localReclamations } = useDataStore();
+  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
+  const complaintsQuery = useQuery({ queryKey: ["complaints"], queryFn: listComplaints, enabled: !loading, retry: false });
+  const clientsQuery = useQuery({ queryKey: ["clients"], queryFn: listClients, enabled: !loading, retry: false });
+  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
+  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? localRdvs;
+  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? localClients;
+  const reclamations = complaintsQuery.data?.complaints.map(mapComplaint) ?? localReclamations;
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
   const open = reclamations.filter((r) => r.statut !== "Resolue");
 
-  // Simulated 7-day RDV trend
   const trend = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date(); d.setDate(d.getDate() - (6 - i));
-    return { day: d.toLocaleDateString("fr-FR", { weekday: "short" }), rdvs: Math.floor(8 + Math.random() * 16) };
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const dayStart = new Date(d);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(d);
+    dayEnd.setHours(23, 59, 59, 999);
+    return {
+      day: d.toLocaleDateString("fr-FR", { weekday: "short" }),
+      rdvs: rdvs.filter((r) => {
+        const date = new Date(r.date);
+        return date >= dayStart && date <= dayEnd;
+      }).length,
+    };
   });
-  const byAgence = SEED_AGENCES.map((a) => ({ name: a.ville, total: rdvs.filter((r) => r.agenceId === a.id).length }));
+  const byAgence = agences.map((a) => ({ name: a.ville, total: rdvs.filter((r) => r.agenceId === a.id).length }));
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={Calendar} label="Total RDV" value={rdvs.length} />
         <Stat icon={Users} label="Clients" value={clients.length} />
-        <Stat icon={Building2} label="Agences" value={SEED_AGENCES.length} />
-        <Stat icon={MessageSquareWarning} label="Réclamations actives" value={open.length} />
+        <Stat icon={Building2} label="Agences" value={agences.length} />
+        <Stat icon={MessageSquareWarning} label="Reclamations actives" value={open.length} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">

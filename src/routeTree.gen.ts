@@ -12,12 +12,13 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedClientReclamationsRouteImport } from './routes/_authenticated.client.reclamations'
-import { Route as AuthenticatedClientRdvNouveauRouteImport } from './routes/_authenticated.client.rdv-nouveau'
-import { Route as AuthenticatedClientProfilRouteImport } from './routes/_authenticated.client.profil'
-import { Route as AuthenticatedClientHistoriqueRouteImport } from './routes/_authenticated.client.historique'
-import { Route as AuthenticatedClientFaqRouteImport } from './routes/_authenticated.client.faq'
-import { Route as AuthenticatedClientDashboardRouteImport } from './routes/_authenticated.client.dashboard'
+import { Route as AuthenticatedClientReclamationsRouteImport } from './routes/_authenticated/client/reclamations'
+import { Route as AuthenticatedClientRdvNouveauRouteImport } from './routes/_authenticated/client/rdv-nouveau'
+import { Route as AuthenticatedClientProfilRouteImport } from './routes/_authenticated/client/profil'
+import { Route as AuthenticatedClientHistoriqueRouteImport } from './routes/_authenticated/client/historique'
+import { Route as AuthenticatedClientFaqRouteImport } from './routes/_authenticated/client/faq'
+import { Route as AuthenticatedClientDashboardRouteImport } from './routes/_authenticated/client/dashboard'
+import { Route as AuthenticatedBackOfficeUtilisateursRouteImport } from './routes/_authenticated.back-office.utilisateurs'
 import { Route as AuthenticatedBackOfficeStatistiquesRouteImport } from './routes/_authenticated.back-office.statistiques'
 import { Route as AuthenticatedBackOfficeReclamationsRouteImport } from './routes/_authenticated.back-office.reclamations'
 import { Route as AuthenticatedBackOfficeRdvRouteImport } from './routes/_authenticated.back-office.rdv'
@@ -28,7 +29,7 @@ import { Route as AuthenticatedAgentFoReclamationsRouteImport } from './routes/_
 import { Route as AuthenticatedAgentFoRdvNouveauRouteImport } from './routes/_authenticated.agent-fo.rdv-nouveau'
 import { Route as AuthenticatedAgentFoDashboardRouteImport } from './routes/_authenticated.agent-fo.dashboard'
 import { Route as AuthenticatedAgentFoClientsRouteImport } from './routes/_authenticated.agent-fo.clients'
-import { Route as AuthenticatedClientRdvIdRouteImport } from './routes/_authenticated.client.rdv.$id'
+import { Route as AuthenticatedClientRdvIdRouteImport } from './routes/_authenticated/client/rdv.$id'
 
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
@@ -77,6 +78,12 @@ const AuthenticatedClientDashboardRoute =
   AuthenticatedClientDashboardRouteImport.update({
     id: '/client/dashboard',
     path: '/client/dashboard',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedBackOfficeUtilisateursRoute =
+  AuthenticatedBackOfficeUtilisateursRouteImport.update({
+    id: '/back-office/utilisateurs',
+    path: '/back-office/utilisateurs',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
 const AuthenticatedBackOfficeStatistiquesRoute =
@@ -159,6 +166,7 @@ export interface FileRoutesByFullPath {
   '/back-office/rdv': typeof AuthenticatedBackOfficeRdvRoute
   '/back-office/reclamations': typeof AuthenticatedBackOfficeReclamationsRoute
   '/back-office/statistiques': typeof AuthenticatedBackOfficeStatistiquesRoute
+  '/back-office/utilisateurs': typeof AuthenticatedBackOfficeUtilisateursRoute
   '/client/dashboard': typeof AuthenticatedClientDashboardRoute
   '/client/faq': typeof AuthenticatedClientFaqRoute
   '/client/historique': typeof AuthenticatedClientHistoriqueRoute
@@ -180,6 +188,7 @@ export interface FileRoutesByTo {
   '/back-office/rdv': typeof AuthenticatedBackOfficeRdvRoute
   '/back-office/reclamations': typeof AuthenticatedBackOfficeReclamationsRoute
   '/back-office/statistiques': typeof AuthenticatedBackOfficeStatistiquesRoute
+  '/back-office/utilisateurs': typeof AuthenticatedBackOfficeUtilisateursRoute
   '/client/dashboard': typeof AuthenticatedClientDashboardRoute
   '/client/faq': typeof AuthenticatedClientFaqRoute
   '/client/historique': typeof AuthenticatedClientHistoriqueRoute
@@ -203,6 +212,7 @@ export interface FileRoutesById {
   '/_authenticated/back-office/rdv': typeof AuthenticatedBackOfficeRdvRoute
   '/_authenticated/back-office/reclamations': typeof AuthenticatedBackOfficeReclamationsRoute
   '/_authenticated/back-office/statistiques': typeof AuthenticatedBackOfficeStatistiquesRoute
+  '/_authenticated/back-office/utilisateurs': typeof AuthenticatedBackOfficeUtilisateursRoute
   '/_authenticated/client/dashboard': typeof AuthenticatedClientDashboardRoute
   '/_authenticated/client/faq': typeof AuthenticatedClientFaqRoute
   '/_authenticated/client/historique': typeof AuthenticatedClientHistoriqueRoute
@@ -226,6 +236,7 @@ export interface FileRouteTypes {
     | '/back-office/rdv'
     | '/back-office/reclamations'
     | '/back-office/statistiques'
+    | '/back-office/utilisateurs'
     | '/client/dashboard'
     | '/client/faq'
     | '/client/historique'
@@ -247,6 +258,7 @@ export interface FileRouteTypes {
     | '/back-office/rdv'
     | '/back-office/reclamations'
     | '/back-office/statistiques'
+    | '/back-office/utilisateurs'
     | '/client/dashboard'
     | '/client/faq'
     | '/client/historique'
@@ -269,6 +281,7 @@ export interface FileRouteTypes {
     | '/_authenticated/back-office/rdv'
     | '/_authenticated/back-office/reclamations'
     | '/_authenticated/back-office/statistiques'
+    | '/_authenticated/back-office/utilisateurs'
     | '/_authenticated/client/dashboard'
     | '/_authenticated/client/faq'
     | '/_authenticated/client/historique'
@@ -347,6 +360,13 @@ declare module '@tanstack/react-router' {
       path: '/client/dashboard'
       fullPath: '/client/dashboard'
       preLoaderRoute: typeof AuthenticatedClientDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/back-office/utilisateurs': {
+      id: '/_authenticated/back-office/utilisateurs'
+      path: '/back-office/utilisateurs'
+      fullPath: '/back-office/utilisateurs'
+      preLoaderRoute: typeof AuthenticatedBackOfficeUtilisateursRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/back-office/statistiques': {
@@ -440,6 +460,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedBackOfficeRdvRoute: typeof AuthenticatedBackOfficeRdvRoute
   AuthenticatedBackOfficeReclamationsRoute: typeof AuthenticatedBackOfficeReclamationsRoute
   AuthenticatedBackOfficeStatistiquesRoute: typeof AuthenticatedBackOfficeStatistiquesRoute
+  AuthenticatedBackOfficeUtilisateursRoute: typeof AuthenticatedBackOfficeUtilisateursRoute
   AuthenticatedClientDashboardRoute: typeof AuthenticatedClientDashboardRoute
   AuthenticatedClientFaqRoute: typeof AuthenticatedClientFaqRoute
   AuthenticatedClientHistoriqueRoute: typeof AuthenticatedClientHistoriqueRoute
@@ -462,6 +483,8 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
     AuthenticatedBackOfficeReclamationsRoute,
   AuthenticatedBackOfficeStatistiquesRoute:
     AuthenticatedBackOfficeStatistiquesRoute,
+  AuthenticatedBackOfficeUtilisateursRoute:
+    AuthenticatedBackOfficeUtilisateursRoute,
   AuthenticatedClientDashboardRoute: AuthenticatedClientDashboardRoute,
   AuthenticatedClientFaqRoute: AuthenticatedClientFaqRoute,
   AuthenticatedClientHistoriqueRoute: AuthenticatedClientHistoriqueRoute,
@@ -483,3 +506,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

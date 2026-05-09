@@ -1,4 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { CalendarPlus, Calendar, Car, MessageSquareWarning, Plus, ArrowRight } from "lucide-react";
 import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
 import { useAuth } from "@/context/AuthContext";
@@ -6,20 +7,34 @@ import { RDVCard } from "@/components/shared/RDVCard";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
 import { fmtDateLong } from "@/lib/format";
+import { listAgencies, listAppointments, listComplaints, listVehicles } from "@/lib/backend-api";
+import { mapAgency, mapAppointment, mapComplaint, mapVehicle } from "@/lib/backend-mappers";
 
 export const Route = createFileRoute("/_authenticated/client/dashboard")({
   component: ClientDashboard,
 });
 
 function ClientDashboard() {
-  const { profile } = useAuth();
+  const { profile, loading } = useAuth();
   const { rdvs, vehicules, reclamations, currentClientId } = useDataStore();
-  const myRdvs = rdvs.filter((r) => r.clientId === currentClientId);
+  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
+  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
+  const complaintsQuery = useQuery({ queryKey: ["complaints"], queryFn: listComplaints, enabled: !loading, retry: false });
+  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
+
+  const backendRdvs = appointmentsQuery.data?.appointments.map(mapAppointment);
+  const backendVehicules = vehiclesQuery.data?.vehicles.map(mapVehicle);
+  const backendReclamations = complaintsQuery.data?.complaints.map(mapComplaint);
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
+
+  const myRdvs = backendRdvs ?? rdvs.filter((r) => r.clientId === currentClientId);
   const upcoming = myRdvs
     .filter((r) => r.statut === "Confirme" || r.statut === "EnAttente")
     .sort((a, b) => +new Date(a.date) - +new Date(b.date));
-  const myVehs = vehicules.filter((v) => v.clientId === currentClientId);
-  const openRecs = reclamations.filter((r) => r.clientId === currentClientId && r.statut !== "Resolue");
+  const myVehs = backendVehicules ?? vehicules.filter((v) => v.clientId === currentClientId);
+  const openRecs = (backendReclamations ?? reclamations.filter((r) => r.clientId === currentClientId)).filter(
+    (r) => r.statut !== "Resolue",
+  );
 
   const next = upcoming[0];
 
@@ -78,7 +93,7 @@ function ClientDashboard() {
         ) : (
           <div className="grid gap-3 md:grid-cols-2">
             {upcoming.slice(0, 4).map((r) => (
-              <RDVCard key={r.id} rdv={r} to={`/client/rdv/${r.id}`} />
+              <RDVCard key={r.id} rdv={r} to={`/client/rdv/${r.id}`} vehicules={myVehs} agences={agences} />
             ))}
           </div>
         )}
@@ -89,7 +104,7 @@ function ClientDashboard() {
         <h2 className="mb-4 font-display text-lg font-semibold">Mes véhicules</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {myVehs.map((v) => {
-            const ag = SEED_AGENCES[0];
+            const ag = agences[0];
             return (
               <div key={v.id} className="rounded-xl border border-border bg-card p-4 hover-lift">
                 <div className="flex items-center justify-between">

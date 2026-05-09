@@ -3,14 +3,27 @@ import { Calendar, MapPin, ChevronRight } from "lucide-react";
 import { StatusBadge } from "./StatusBadge";
 import { VehiclePlate } from "./VehiclePlate";
 import type { RendezVous } from "@/types";
+import type { Agence, Vehicule } from "@/types";
 import { fmtDateLong } from "@/lib/format";
 import { useDataStore } from "@/stores/dataStore";
 import { SEED_AGENCES } from "@/stores/dataStore";
 
-export function RDVCard({ rdv, to }: { rdv: RendezVous; to?: string }) {
-  const vehicules = useDataStore((s) => s.vehicules);
+export function RDVCard({
+  rdv,
+  to,
+  vehicules: providedVehicules,
+  agences: providedAgences,
+}: {
+  rdv: RendezVous;
+  to?: string;
+  vehicules?: Vehicule[];
+  agences?: Agence[];
+}) {
+  const storeVehicules = useDataStore((s) => s.vehicules);
+  const vehicules = providedVehicules ?? storeVehicules;
+  const agences = providedAgences ?? SEED_AGENCES;
   const vehicule = vehicules.find((v) => v.id === rdv.vehiculeId);
-  const agence = SEED_AGENCES.find((a) => a.id === rdv.agenceId);
+  const agence = agences.find((a) => a.id === rdv.agenceId);
 
   const Wrapper = to
     ? ({ children }: { children: React.ReactNode }) => (

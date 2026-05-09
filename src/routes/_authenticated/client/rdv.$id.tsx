@@ -1,10 +1,14 @@
 import { createFileRoute, Link, useParams } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, MapPin, Calendar, Car, FileText, X } from "lucide-react";
 import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
 import { fmtDateLong } from "@/lib/format";
 import { toast } from "sonner";
+import { listAgencies, listAppointments, listVehicles, updateAppointmentStatus } from "@/lib/backend-api";
+import { mapAgency, mapAppointment, mapVehicle } from "@/lib/backend-mappers";
+import { useAuth } from "@/context/AuthContext";
 
 export const Route = createFileRoute("/_authenticated/client/rdv/$id")({
   component: RDVDetails,
@@ -12,10 +16,23 @@ export const Route = createFileRoute("/_authenticated/client/rdv/$id")({
 
 function RDVDetails() {
   const { id } = useParams({ from: "/_authenticated/client/rdv/$id" });
-  const rdv = useDataStore((s) => s.rdvs.find((r) => r.id === id));
-  const vehicule = useDataStore((s) => s.vehicules.find((v) => v.id === rdv?.vehiculeId));
+  const { loading } = useAuth();
+  const queryClient = useQueryClient();
+  const localRdv = useDataStore((s) => s.rdvs.find((r) => r.id === id));
+  const localVehicules = useDataStore((s) => s.vehicules);
   const updateStatus = useDataStore((s) => s.updateRDVStatus);
-  const agence = SEED_AGENCES.find((a) => a.id === rdv?.agenceId);
+  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
+  const vehiclesQuery = useQuery({ queryKey: ["vehicles"], queryFn: listVehicles, enabled: !loading, retry: false });
+  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
+  const cancelMutation = useMutation({
+    mutationFn: () => updateAppointmentStatus(id, "Annule"),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["appointments"] }),
+  });
+  const rdv = appointmentsQuery.data?.appointments.map(mapAppointment).find((r) => r.id === id) ?? localRdv;
+  const vehicules = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? localVehicules;
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
+  const vehicule = vehicules.find((v) => v.id === rdv?.vehiculeId);
+  const agence = agences.find((a) => a.id === rdv?.agenceId);
 
   if (!rdv) {
     return (
@@ -57,8 +74,13 @@ function RDVDetails() {
       {(rdv.statut === "EnAttente" || rdv.statut === "Confirme") && (
         <button
           onClick={() => {
-            updateStatus(rdv.id, "Annule");
-            toast.success("Rendez-vous annulé");
+            cancelMutation.mutate(undefined, {
+              onSuccess: () => toast.success("Rendez-vous annule"),
+              onError: () => {
+                updateStatus(rdv.id, "Annule");
+                toast.success("Rendez-vous annule localement");
+              },
+            });
           }}
           className="inline-flex items-center gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-4 py-2 text-sm font-medium text-destructive hover:bg-destructive/20"
         >

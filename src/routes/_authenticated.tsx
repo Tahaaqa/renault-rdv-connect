@@ -1,15 +1,21 @@
 import { createFileRoute, Outlet, redirect, useRouterState } from "@tanstack/react-router";
+import { createServerFn } from "@tanstack/react-start";
 import { useEffect } from "react";
 import { SidebarProvider, SidebarInset } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/AppSidebar";
 import { TopBar } from "@/components/layout/TopBar";
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/integrations/supabase/client";
+
+const getAuthStatus = createServerFn({ method: "GET" }).handler(async () => {
+  const { getCurrentSession } = await import("@/backend/auth/current-session.server");
+  const session = await getCurrentSession();
+  return { authenticated: Boolean(session) };
+});
 
 export const Route = createFileRoute("/_authenticated")({
   beforeLoad: async () => {
-    const { data } = await supabase.auth.getSession();
-    if (!data.session) {
+    const { authenticated } = await getAuthStatus();
+    if (!authenticated) {
       throw redirect({ to: "/login" });
     }
   },
@@ -29,6 +35,7 @@ const TITLES: Record<string, string> = {
   "/agent-fo/reclamations": "Réclamations",
   "/back-office/dashboard": "Tableau de bord",
   "/back-office/rdv": "Tous les rendez-vous",
+  "/back-office/utilisateurs": "Utilisateurs",
   "/back-office/agences": "Agences",
   "/back-office/plannings": "Plannings",
   "/back-office/reclamations": "Réclamations",

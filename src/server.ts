@@ -2,6 +2,8 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { handleAuthRoute } from "./backend/http/auth-routes.server";
+import { handleAppRoute } from "./backend/http/app-routes.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -69,10 +71,18 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const authResponse = await handleAuthRoute(request);
+      if (authResponse) return authResponse;
+      const appResponse = await handleAppRoute(request);
+      if (appResponse) return appResponse;
+
       const handler = await getServerEntry();
       const response = await handler.fetch(request, env, ctx);
       return await normalizeCatastrophicSsrResponse(response);
     } catch (error) {
+      if (error instanceof Response) {
+        return error;
+      }
       console.error(error);
       return brandedErrorResponse();
     }

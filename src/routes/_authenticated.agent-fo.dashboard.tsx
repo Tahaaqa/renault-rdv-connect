@@ -1,17 +1,29 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Calendar, Users, MessageSquareWarning, CheckCircle2, Clock } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
 import { useAuth } from "@/context/AuthContext";
-import { RDVCard } from "@/components/shared/RDVCard";
+import { listAgencies, listAppointments, listClients, listComplaints } from "@/lib/backend-api";
+import { mapAgency, mapAppointment, mapComplaint, mapUserClient } from "@/lib/backend-mappers";
 
 export const Route = createFileRoute("/_authenticated/agent-fo/dashboard")({
   component: AFODash,
 });
 
 function AFODash() {
-  const { profile } = useAuth();
-  const { rdvs, reclamations, clients } = useDataStore();
-  const agenceId = SEED_AGENCES[0].id; // demo: first agency
+  const { profile, loading } = useAuth();
+  const { rdvs: localRdvs, reclamations: localReclamations, clients: localClients } = useDataStore();
+  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
+  const complaintsQuery = useQuery({ queryKey: ["complaints"], queryFn: listComplaints, enabled: !loading, retry: false });
+  const clientsQuery = useQuery({ queryKey: ["clients"], queryFn: listClients, enabled: !loading, retry: false });
+  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
+
+  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? localRdvs;
+  const reclamations = complaintsQuery.data?.complaints.map(mapComplaint) ?? localReclamations;
+  const clients = clientsQuery.data?.clients.map(mapUserClient) ?? localClients;
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
+  const agenceId = profile?.agenceId ?? agences[0]?.id;
+  const agence = agences.find((a) => a.id === agenceId) ?? agences[0];
   const today = new Date().toDateString();
   const todayRdvs = rdvs.filter((r) => r.agenceId === agenceId && new Date(r.date).toDateString() === today);
   const pending = todayRdvs.filter((r) => r.statut === "EnAttente");
@@ -21,15 +33,15 @@ function AFODash() {
   return (
     <div className="mx-auto max-w-7xl space-y-8">
       <div>
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">Front-Office · {SEED_AGENCES[0].nom}</p>
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">Front-Office - {agence?.nom ?? "Agence"}</p>
         <h1 className="mt-1 font-display text-3xl font-bold">Bonjour, {profile?.prenom ?? "Agent"}</h1>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Stat icon={Calendar} label="RDV aujourd'hui" value={todayRdvs.length} />
-        <Stat icon={CheckCircle2} label="Confirmés" value={confirmed.length} />
+        <Stat icon={CheckCircle2} label="Confirmes" value={confirmed.length} />
         <Stat icon={Clock} label="En attente" value={pending.length} />
-        <Stat icon={MessageSquareWarning} label="Réclamations" value={openRecs.length} />
+        <Stat icon={MessageSquareWarning} label="Reclamations" value={openRecs.length} />
       </div>
 
       <section>
@@ -39,7 +51,7 @@ function AFODash() {
         </div>
         {todayRdvs.length === 0 ? (
           <p className="rounded-xl border border-dashed border-border bg-card/40 p-6 text-center text-sm text-muted-foreground">
-            Aucun rendez-vous prévu aujourd'hui.
+            Aucun rendez-vous prevu aujourd'hui.
           </p>
         ) : (
           <div className="space-y-2">

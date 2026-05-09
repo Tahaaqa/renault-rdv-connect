@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+import { useQuery } from "@tanstack/react-query";
 import { useDataStore, SEED_AGENCES } from "@/stores/dataStore";
+import { useAuth } from "@/context/AuthContext";
+import { listAgencies, listAppointments } from "@/lib/backend-api";
+import { mapAgency, mapAppointment } from "@/lib/backend-mappers";
 
 export const Route = createFileRoute("/_authenticated/back-office/statistiques")({
   component: ABOStats,
@@ -9,20 +13,25 @@ export const Route = createFileRoute("/_authenticated/back-office/statistiques")
 const COLORS = ["var(--status-confirmed)", "var(--status-pending)", "var(--status-cancelled)", "var(--status-done)"];
 
 function ABOStats() {
-  const rdvs = useDataStore((s) => s.rdvs);
+  const { loading } = useAuth();
+  const localRdvs = useDataStore((s) => s.rdvs);
+  const appointmentsQuery = useQuery({ queryKey: ["appointments"], queryFn: listAppointments, enabled: !loading, retry: false });
+  const agenciesQuery = useQuery({ queryKey: ["agencies"], queryFn: listAgencies, enabled: !loading, retry: false });
+  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? localRdvs;
+  const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? SEED_AGENCES;
   const byStatus = ["Confirme", "EnAttente", "Annule", "Termine"].map((k) => ({
     name: k, value: rdvs.filter((r) => r.statut === k).length,
   }));
-  const byAgence = SEED_AGENCES.map((a) => ({
+  const byAgence = agences.map((a) => ({
     ville: a.ville,
-    confirmés: rdvs.filter((r) => r.agenceId === a.id && r.statut === "Confirme").length,
-    annulés: rdvs.filter((r) => r.agenceId === a.id && r.statut === "Annule").length,
+    confirmes: rdvs.filter((r) => r.agenceId === a.id && r.statut === "Confirme").length,
+    annules: rdvs.filter((r) => r.agenceId === a.id && r.statut === "Annule").length,
   }));
 
   return (
-    <div className="mx-auto max-w-7xl grid gap-6 lg:grid-cols-2">
+    <div className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-2">
       <div className="rounded-xl border border-border bg-card p-5">
-        <h3 className="mb-4 font-display text-base font-semibold">Répartition par statut</h3>
+        <h3 className="mb-4 font-display text-base font-semibold">Repartition par statut</h3>
         <div className="h-72">
           <ResponsiveContainer>
             <PieChart>
@@ -37,7 +46,7 @@ function ABOStats() {
       </div>
 
       <div className="rounded-xl border border-border bg-card p-5">
-        <h3 className="mb-4 font-display text-base font-semibold">Confirmés vs annulés par agence</h3>
+        <h3 className="mb-4 font-display text-base font-semibold">Confirmes vs annules par agence</h3>
         <div className="h-72">
           <ResponsiveContainer>
             <BarChart data={byAgence}>
@@ -46,8 +55,8 @@ function ABOStats() {
               <YAxis stroke="var(--muted-foreground)" fontSize={11} />
               <Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 8 }} />
               <Legend />
-              <Bar dataKey="confirmés" stackId="a" fill="var(--status-confirmed)" radius={[0, 0, 0, 0]} />
-              <Bar dataKey="annulés" stackId="a" fill="var(--status-cancelled)" radius={[6, 6, 0, 0]} />
+              <Bar dataKey="confirmes" stackId="a" fill="var(--status-confirmed)" radius={[0, 0, 0, 0]} />
+              <Bar dataKey="annules" stackId="a" fill="var(--status-cancelled)" radius={[6, 6, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </div>
