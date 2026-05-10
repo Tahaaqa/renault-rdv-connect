@@ -2,6 +2,7 @@ import { getBackendConfig } from "@/backend/config";
 import { getBackendRepositories, seedDefaultData } from "@/backend/db/mongo.server";
 import { createAppointment } from "@/backend/services/appointments";
 import { extractPlateText } from "@/backend/services/ocrService";
+import { recommendAgence } from "@/backend/services/agenceRecommendationService";
 import { requireSessionFromRequest } from "@/backend/auth/request-session.server";
 import { jsonResponse } from "@/backend/http/json";
 import type { AppSession } from "@/backend/auth/session";
@@ -55,6 +56,13 @@ const CreateComplaintSchema = z.object({
 const UpdateComplaintSchema = z.object({
   status: z.enum(["Ouverte", "EnCours", "Resolue", "Escaladee"]),
   resolution: z.string().nullable().optional(),
+});
+
+const RecommendationRequestSchema = z.object({
+  userLat: z.number(),
+  userLon: z.number(),
+  vehiculeModele: z.string().optional(),
+  serviceType: z.array(z.string()).optional(),
 });
 
 const UpdateAppointmentStatusSchema = z.object({
@@ -144,6 +152,25 @@ async function handleAgencies(request: Request): Promise<Response> {
   }
 
   return new Response("Method not allowed", { status: 405 });
+}
+
+async function handleAgencyRecommendation(request: Request): Promise<Response> {
+  const session = await requireSessionFromRequest(request);
+  const payload = await parsePayload(request, RecommendationRequestSchema);
+  const repos = await getRepositories();
+
+  const result = await recommendAgence(
+    {
+      userLat: payload.userLat,
+      userLon: payload.userLon,
+      clientUserId: session.userId,
+      vehiculeModele: payload.vehiculeModele,
+      serviceType: payload.serviceType,
+    },
+    repos
+  );
+
+  return jsonResponse(result);
 }
 
 async function handleAgencyUpdate(request: Request, agencyId: string): Promise<Response> {
@@ -477,6 +504,10 @@ export async function handleAppRoute(request: Request): Promise<Response | undef
 
   if (url.pathname === "/api/ocr/plaque" && request.method === "POST") {
     return handleOcrPlate(request);
+  }
+
+  if (url.pathname === "/api/agencies/recommend" && request.method === "POST") {
+    return handleAgencyRecommendation(request);
   }
 
   if (url.pathname === "/api/agencies" && (request.method === "GET" || request.method === "POST")) {

@@ -13,6 +13,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { AgencyMap } from "@/components/maps/AgencyMap";
+import { AgenceRecommendationPanel } from "@/components/maps/AgenceRecommendationPanel";
+import { useAgenceRecommendation } from "@/hooks/useAgenceRecommendation";
 import { ServiceChecklist } from "@/components/rdv/ServiceChecklist";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
 import { useAuth } from "@/context/AuthContext";
@@ -45,6 +47,8 @@ function NouveauRDV() {
   const navigate = useNavigate();
   const { loading } = useAuth();
   const [blockedSlots, setBlockedSlots] = useState<Set<string>>(new Set());
+  const [userPos, setUserPos] = useState<[number, number] | null>(null);
+  const recommendation = useAgenceRecommendation();
 
   const agenciesQuery = useQuery({
     queryKey: ["agencies"],
@@ -152,11 +156,22 @@ function NouveauRDV() {
 
       <div className="animate-fade-up rounded-xl border border-border bg-card p-6 md:p-8">
         {s.step === 1 && (
-          <div>
-            <h2 className="font-display text-xl font-semibold">Choisissez votre agence</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Sélectionnez l'agence Renault la plus proche.
-            </p>
+          <div className="space-y-6">
+            <div>
+              <h2 className="font-display text-xl font-semibold">Choisissez votre agence</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Sélectionnez sur la carte ou laissez l'IA choisir pour vous.
+              </p>
+            </div>
+
+            <AgenceRecommendationPanel
+              result={recommendation.data ?? null}
+              isLoading={recommendation.isPending}
+              onSelect={s.setAgence}
+              onTrigger={() => userPos && recommendation.mutate({ userLat: userPos[0], userLon: userPos[1] })}
+              hasLocation={!!userPos}
+            />
+
             <div className="mt-6 grid gap-4 lg:grid-cols-[45%_55%]">
               <div className="max-h-[500px] space-y-3 overflow-y-auto pr-1">
                 {agences.map((a) => {
@@ -182,10 +197,13 @@ function NouveauRDV() {
                 })}
               </div>
               <AgencyMap
-                agencies={agences}
+                agencies={agenciesQuery.data?.agencies.map(mapAgency) ?? []}
                 selectedAgenceId={s.agence?.id}
+                nearestAgenceId={recommendation.data?.recommended.id ?? null}
                 onAgenceSelect={s.setAgence}
                 height="500px"
+                showRadius={true}
+                onUserLocation={(pos) => setUserPos(pos)}
               />
             </div>
           </div>
