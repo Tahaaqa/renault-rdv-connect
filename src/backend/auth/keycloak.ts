@@ -19,7 +19,7 @@ export interface KeycloakTokenClaims {
   [claim: string]: unknown;
 }
 
-const APP_ROLES: AppRole[] = ["client", "agent_fo", "agent_bo"];
+const APP_ROLES: AppRole[] = ["client", "agent_front_office", "agent_back_office"];
 
 export function getKeycloakAuthorizationUrl(config: KeycloakConfig, state: string): string {
   const url = new URL(`${config.issuerUrl}/protocol/openid-connect/auth`);

@@ -9,7 +9,8 @@ interface StepperState {
   vehicule: Vehicule | null;
   date: string | null; // ISO date (yyyy-mm-dd)
   heure: string | null;
-  notes: string;
+  servicesSelectionnes: string[];
+  notesLibres: string;
   termsAccepted: boolean;
 
   setStep: (s: number) => void;
@@ -19,7 +20,8 @@ interface StepperState {
   setClient: (c: Client | null) => void;
   setVehicule: (v: Vehicule | null) => void;
   setSlot: (date: string, heure: string) => void;
-  setNotes: (n: string) => void;
+  setServices: (services: string[]) => void;
+  setNotesLibres: (n: string) => void;
   setTerms: (b: boolean) => void;
   reset: () => void;
 }
@@ -33,7 +35,8 @@ export const useStepperStore = create<StepperState>()(
       vehicule: null,
       date: null,
       heure: null,
-      notes: "",
+      servicesSelectionnes: [],
+      notesLibres: "",
       termsAccepted: false,
       setStep: (s) => set({ step: s }),
       next: () => set({ step: Math.min(5, get().step + 1) }),
@@ -42,7 +45,8 @@ export const useStepperStore = create<StepperState>()(
       setClient: (c) => set({ client: c }),
       setVehicule: (v) => set({ vehicule: v }),
       setSlot: (date, heure) => set({ date, heure }),
-      setNotes: (n) => set({ notes: n }),
+      setServices: (services) => set({ servicesSelectionnes: services }),
+      setNotesLibres: (n) => set({ notesLibres: n }),
       setTerms: (b) => set({ termsAccepted: b }),
       reset: () =>
         set({
@@ -52,7 +56,8 @@ export const useStepperStore = create<StepperState>()(
           vehicule: null,
           date: null,
           heure: null,
-          notes: "",
+          servicesSelectionnes: [],
+          notesLibres: "",
           termsAccepted: false,
         }),
     }),

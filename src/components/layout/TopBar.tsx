@@ -8,20 +8,15 @@ import { listNotifications, markNotificationsRead } from "@/lib/backend-api";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { AppRole } from "@/types";
 import { fmtRelative } from "@/lib/format";
 
 export function TopBar({ title }: { title?: string }) {
   const theme = useUIStore((s) => s.theme);
   const toggleTheme = useUIStore((s) => s.toggleTheme);
-  const devRole = useUIStore((s) => s.devRoleOverride);
-  const setDevRole = useUIStore((s) => s.setDevRole);
-  const { realRole, loading } = useAuth();
+  const { loading } = useAuth();
   const queryClient = useQueryClient();
   const notificationsQuery = useQuery({
     queryKey: ["notifications"],
@@ -38,9 +33,6 @@ export function TopBar({ title }: { title?: string }) {
   const unread = notifications.filter((n) => !n.read).length;
   const [open, setOpen] = useState(false);
 
-  const roles: AppRole[] = ["client", "agent_fo", "agent_bo"];
-  const labelFor = (r: AppRole) =>
-    r === "client" ? "Client" : r === "agent_fo" ? "Agent FO" : "Back-Office";
 
   return (
     <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-background/80 px-4 backdrop-blur-xl">
@@ -48,23 +40,6 @@ export function TopBar({ title }: { title?: string }) {
       <h1 className="font-display text-base font-semibold">{title ?? "Renault RDV"}</h1>
 
       <div className="ml-auto flex items-center gap-2">
-        {/* Dev role switcher */}
-        <DropdownMenu>
-          <DropdownMenuTrigger className="hidden items-center gap-2 rounded-md border border-yellow/30 bg-yellow/5 px-2.5 py-1 text-[11px] font-medium uppercase tracking-widest text-yellow hover:bg-yellow/10 md:inline-flex">
-            DEV · {labelFor(devRole ?? realRole)}
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-44">
-            <DropdownMenuLabel>Aperçu rôle</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {roles.map((r) => (
-              <DropdownMenuItem key={r} onClick={() => setDevRole(r)}>
-                {labelFor(r)}
-              </DropdownMenuItem>
-            ))}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={() => setDevRole(null)}>Réinitialiser</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
 
         <button
           onClick={toggleTheme}

@@ -1,5 +1,9 @@
 import { Link } from "@tanstack/react-router";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Calendar, MapPin, ChevronRight } from "lucide-react";
+import { toast } from "sonner";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { cancelAppointment } from "@/lib/backend-api";
 import { StatusBadge } from "./StatusBadge";
 import { VehiclePlate } from "./VehiclePlate";
 import type { RendezVous } from "@/types";
@@ -21,6 +25,26 @@ export function RDVCard({
   const agences = providedAgences ?? [];
   const vehicule = vehicules.find((v) => v.id === rdv.vehiculeId);
   const agence = agences.find((a) => a.id === rdv.agenceId);
+  const queryClient = useQueryClient();
+  const canCancel =
+    (rdv.statut === "EnAttente" || rdv.statut === "Confirme") &&
+    new Date(rdv.date).getTime() > Date.now() + 24 * 60 * 60 * 1000;
+  const cancelMutation = useMutation({
+    mutationFn: () => cancelAppointment(rdv.id),
+    onSuccess: () => {
+      toast.success("RDV annulé.");
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      queryClient.invalidateQueries({ queryKey: ["rdv"] });
+    },
+    onError: (error) => {
+      const err = error as Error & { payload?: { code?: string } };
+      if (err.payload?.code === "TOO_LATE_TO_CANCEL") {
+        toast.error("Annulation impossible moins de 24h avant.");
+      } else {
+        toast.error("Erreur. Veuillez réessayer.");
+      }
+    },
+  });
 
   const Wrapper = to
     ? ({ children }: { children: React.ReactNode }) => (
@@ -59,8 +83,43 @@ export function RDVCard({
                 </>
               )}
             </div>
-            {rdv.notes && (
-              <p className="mt-3 line-clamp-2 text-sm text-muted-foreground/80">{rdv.notes}</p>
+            {rdv.servicesSelectionnes.length > 0 && (
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {rdv.servicesSelectionnes.slice(0, 3).map((service) => (
+                  <span key={service} className="rounded-full bg-yellow/10 px-2 py-0.5 text-xs">
+                    {service}
+                  </span>
+                ))}
+              </div>
+            )}
+            {canCancel && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    onClick={(event) => event.preventDefault()}
+                    className="mt-4 rounded-md border border-destructive/40 px-3 py-1.5 text-xs font-medium text-destructive"
+                  >
+                    Annuler
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent onClick={(event) => event.preventDefault()}>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Annuler ce rendez-vous ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Cette action est irréversible. Le créneau sera libéré.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Retour</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => cancelMutation.mutate()}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Annuler le RDV
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             )}
           </div>
           {to && (

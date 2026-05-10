@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Briefcase, KeyRound, Lock, Shield, User } from "lucide-react";
+import { KeyRound, Lock } from "lucide-react";
 
 export const Route = createFileRoute("/login")({
   component: LoginPage,
@@ -7,12 +7,6 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
-  const roles = [
-    { v: "client", icon: User, label: "Client" },
-    { v: "agent_fo", icon: Briefcase, label: "Agent FO" },
-    { v: "agent_bo", icon: Shield, label: "Administration" },
-  ] as const;
-
   return (
     <div className="flex min-h-screen w-full">
       <div className="relative hidden flex-col justify-center overflow-hidden bg-renault-black p-12 text-white lg:flex lg:w-[55%]">
@@ -77,18 +71,6 @@ function LoginPage() {
           <p className="mt-1 text-sm text-muted-foreground">
             Accedez a votre espace personnel avec Keycloak.
           </p>
-
-          <div className="mt-7 grid grid-cols-3 gap-2">
-            {roles.map((r) => (
-              <div
-                key={r.v}
-                className="press relative flex flex-col items-center gap-2 rounded-xl border-2 border-border p-3 text-xs transition"
-              >
-                <r.icon size={22} className="text-muted-foreground" />
-                <span className="font-medium">{r.label}</span>
-              </div>
-            ))}
-          </div>
 
           <a
             href="/auth/login"

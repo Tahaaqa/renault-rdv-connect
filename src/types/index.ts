@@ -1,4 +1,4 @@
-export type AppRole = "client" | "agent_fo" | "agent_bo";
+export type AppRole = "client" | "agent_front_office" | "agent_back_office";
 
 export type StatutRDV = "EnAttente" | "Confirme" | "Annule" | "Termine";
 export type StatutReclamation = "Ouverte" | "EnCours" | "Resolue" | "Escaladee";
@@ -50,7 +50,8 @@ export interface RendezVous {
   vehicule?: Vehicule;
   date: string; // ISO datetime
   statut: StatutRDV;
-  notes?: string;
+  servicesSelectionnes: string[];
+  notesLibres?: string;
   createdAt: string;
   agentCreateurId?: string;
 }

@@ -8,7 +8,8 @@ export interface CreateAppointmentInput {
   agencyId: EntityId;
   vehicleId: EntityId;
   startsAt: string;
-  notes?: string | null;
+  servicesSelectionnes: string[];
+  notesLibres?: string | null;
 }
 
 export async function createAppointment(
@@ -19,7 +20,7 @@ export async function createAppointment(
   const isClientCreatingOwnAppointment =
     session.principal.roles.includes("client") && session.userId === input.clientUserId;
   const isStaff =
-    session.principal.roles.includes("agent_fo") || session.principal.roles.includes("agent_bo");
+    session.principal.roles.includes("agent_front_office") || session.principal.roles.includes("agent_back_office");
 
   if (!isClientCreatingOwnAppointment && !isStaff) {
     throw new Response("Forbidden", { status: 403 });
@@ -41,7 +42,8 @@ export async function createAppointment(
     vehicleId: input.vehicleId,
     startsAt: input.startsAt,
     status: "EnAttente",
-    notes: input.notes ?? null,
+    servicesSelectionnes: input.servicesSelectionnes,
+    notesLibres: input.notesLibres ?? null,
     createdByUserId: session.userId,
   });
 }
@@ -53,8 +55,8 @@ export async function changeAppointmentStatus(
   status: StatutRDV,
 ): Promise<BackendAppointment> {
   if (
-    !session.principal.roles.includes("agent_fo") &&
-    !session.principal.roles.includes("agent_bo")
+    !session.principal.roles.includes("agent_front_office") &&
+    !session.principal.roles.includes("agent_back_office")
   ) {
     throw new Response("Forbidden", { status: 403 });
   }

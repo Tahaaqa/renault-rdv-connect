@@ -7,36 +7,42 @@ export const DEFAULT_AGENCIES = [
     city: "Tunis",
     address: "Avenue Habib Bourguiba, Tunis",
     phone: "+216 71 234 567",
+    location: { lat: 36.8065, lng: 10.1815 },
   },
   {
     name: "Renault Sfax",
     city: "Sfax",
     address: "Route de Tunis, Sfax",
     phone: "+216 74 456 789",
+    location: { lat: 34.7406, lng: 10.7603 },
   },
   {
     name: "Renault Sousse",
     city: "Sousse",
     address: "Boulevard 14 Janvier, Sousse",
     phone: "+216 73 678 901",
+    location: { lat: 35.8245, lng: 10.6346 },
   },
   {
     name: "Renault Monastir",
     city: "Monastir",
     address: "Zone Industrielle Monastir",
     phone: "+216 73 890 123",
+    location: { lat: 35.7643, lng: 10.8113 },
   },
   {
     name: "Renault Bizerte",
     city: "Bizerte",
     address: "Avenue Farhat Hached, Bizerte",
     phone: "+216 72 012 345",
+    location: { lat: 37.2746, lng: 9.8739 },
   },
   {
     name: "Renault Gabes",
     city: "Gabes",
     address: "Route Nationale 1, Gabes",
     phone: "+216 75 234 567",
+    location: { lat: 33.8843, lng: 10.0982 },
   },
 ] as const;
 
@@ -80,7 +86,7 @@ export const DEFAULT_USERS: SeedUser[] = [
     firstName: "Sami",
     lastName: "Cherif",
     phone: "+216 27 111 333",
-    roles: ["agent_fo"],
+    roles: ["agent_front_office"],
   },
   {
     keycloakSubject: "seed-agent-bo-1",
@@ -88,7 +94,7 @@ export const DEFAULT_USERS: SeedUser[] = [
     firstName: "Yasmine",
     lastName: "Khelifi",
     phone: "+216 50 444 666",
-    roles: ["agent_bo"],
+    roles: ["agent_back_office"],
   },
 ];
 
@@ -145,7 +151,8 @@ export interface SeedAppointment {
   dayOffset: number;
   hour: number;
   status: StatutRDV;
-  notes?: string;
+  servicesSelectionnes?: string[];
+  notesLibres?: string;
 }
 
 export const DEFAULT_APPOINTMENTS: SeedAppointment[] = [
@@ -156,7 +163,7 @@ export const DEFAULT_APPOINTMENTS: SeedAppointment[] = [
     dayOffset: 7,
     hour: 10,
     status: "Confirme",
-    notes: "Vidange et révision générale.",
+    servicesSelectionnes: ["Vidange et filtre à huile", "Révision générale"],
   },
   {
     clientIndex: 0,
@@ -165,7 +172,8 @@ export const DEFAULT_APPOINTMENTS: SeedAppointment[] = [
     dayOffset: 14,
     hour: 14,
     status: "EnAttente",
-    notes: "Bruit moteur depuis 2 semaines.",
+    servicesSelectionnes: ["Autre"],
+    notesLibres: "Bruit moteur depuis 2 semaines.",
   },
   { clientIndex: 0, agencyIndex: 1, vehicleIndex: 0, dayOffset: -30, hour: 11, status: "Termine" },
   { clientIndex: 1, agencyIndex: 0, vehicleIndex: 2, dayOffset: 0, hour: 9, status: "Confirme" },

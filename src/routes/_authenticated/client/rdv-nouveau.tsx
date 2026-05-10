@@ -2,26 +2,29 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import {
+  Calendar as CalendarIcon,
+  Car,
+  Check,
   ChevronLeft,
   ChevronRight,
-  Check,
-  MapPin,
-  Car,
-  Calendar as CalendarIcon,
   FileText,
+  MapPin,
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useStepperStore } from "@/stores/rdvStepperStore";
+import { AgencyMap } from "@/components/maps/AgencyMap";
+import { ServiceChecklist } from "@/components/rdv/ServiceChecklist";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
+import { useAuth } from "@/context/AuthContext";
 import { fmtDateLong } from "@/lib/format";
 import {
   createAppointment as createBackendAppointment,
   listAgencies,
+  listAppointments,
   listVehicles,
 } from "@/lib/backend-api";
-import { mapAgency, mapVehicle } from "@/lib/backend-mappers";
-import { useAuth } from "@/context/AuthContext";
+import { mapAgency, mapAppointment, mapVehicle } from "@/lib/backend-mappers";
+import { useStepperStore } from "@/stores/rdvStepperStore";
 
 export const Route = createFileRoute("/_authenticated/client/rdv-nouveau")({
   component: NouveauRDV,
@@ -31,14 +34,18 @@ const STEPS = [
   { n: 1, label: "Agence", icon: MapPin },
   { n: 2, label: "Véhicule", icon: Car },
   { n: 3, label: "Créneau", icon: CalendarIcon },
-  { n: 4, label: "Détails", icon: FileText },
+  { n: 4, label: "Services", icon: FileText },
   { n: 5, label: "Confirmer", icon: ShieldCheck },
 ];
+
+const HOURS = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"];
 
 function NouveauRDV() {
   const s = useStepperStore();
   const navigate = useNavigate();
   const { loading } = useAuth();
+  const [blockedSlots, setBlockedSlots] = useState<Set<string>>(new Set());
+
   const agenciesQuery = useQuery({
     queryKey: ["agencies"],
     queryFn: listAgencies,
@@ -51,15 +58,35 @@ function NouveauRDV() {
     enabled: !loading,
     retry: false,
   });
+  const appointmentsQuery = useQuery({
+    queryKey: ["appointments"],
+    queryFn: listAppointments,
+    enabled: !loading,
+    retry: false,
+  });
   const createAppointmentMutation = useMutation({ mutationFn: createBackendAppointment });
+
   const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? [];
   const myVehs = vehiclesQuery.data?.vehicles.map(mapVehicle) ?? [];
+  const rdvs = appointmentsQuery.data?.appointments.map(mapAppointment) ?? [];
+  const unavailableHours = new Set(
+    rdvs
+      .filter(
+        (r) =>
+          r.agenceId === s.agence?.id &&
+          s.date &&
+          r.date.slice(0, 10) === s.date &&
+          (r.statut === "EnAttente" || r.statut === "Confirme"),
+      )
+      .map((r) => new Date(r.date).toTimeString().slice(0, 5)),
+  );
+  for (const hour of blockedSlots) unavailableHours.add(hour);
 
   const canNext =
     (s.step === 1 && !!s.agence) ||
     (s.step === 2 && !!s.vehicule) ||
-    (s.step === 3 && !!s.date && !!s.heure) ||
-    s.step === 4 ||
+    (s.step === 3 && !!s.date && !!s.heure && !unavailableHours.has(s.heure)) ||
+    (s.step === 4 && s.servicesSelectionnes.length > 0) ||
     (s.step === 5 && s.termsAccepted);
 
   const submit = async () => {
@@ -70,19 +97,27 @@ function NouveauRDV() {
         agencyId: s.agence.id,
         vehicleId: s.vehicule.id,
         startsAt: dt.toISOString(),
-        notes: s.notes,
+        servicesSelectionnes: s.servicesSelectionnes,
+        notesLibres: s.notesLibres || null,
       });
       toast.success("Rendez-vous créé", { description: appointment.reference });
       s.reset();
       navigate({ to: `/client/rdv/${appointment.id}` });
-    } catch {
+    } catch (error) {
+      const err = error as Error & { status?: number };
+      if (err.status === 409 && s.heure) {
+        setBlockedSlots((current) => new Set([...current, s.heure!]));
+        toast.error("Ce créneau vient d'être pris. Choisissez un autre horaire.");
+        await appointmentsQuery.refetch();
+        s.setStep(3);
+        return;
+      }
       toast.error("Erreur lors de la création du rendez-vous");
     }
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      {/* Stepper header */}
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="sticky top-14 z-10 -mx-4 border-b border-border bg-background/90 px-4 py-4 backdrop-blur md:mx-0 md:rounded-xl md:border md:px-6">
         <div className="flex items-center justify-between gap-2">
           {STEPS.map((st, i) => {
@@ -115,36 +150,43 @@ function NouveauRDV() {
         </div>
       </div>
 
-      {/* Step content */}
-      <div className="rounded-xl border border-border bg-card p-6 md:p-8 animate-fade-up">
+      <div className="animate-fade-up rounded-xl border border-border bg-card p-6 md:p-8">
         {s.step === 1 && (
           <div>
             <h2 className="font-display text-xl font-semibold">Choisissez votre agence</h2>
             <p className="mt-1 text-sm text-muted-foreground">
               Sélectionnez l'agence Renault la plus proche.
             </p>
-            <div className="mt-6 grid gap-3 md:grid-cols-2">
-              {agences.map((a) => {
-                const active = s.agence?.id === a.id;
-                return (
-                  <button
-                    key={a.id}
-                    onClick={() => s.setAgence(a)}
-                    className={`text-left rounded-xl border p-4 transition hover-lift ${
-                      active ? "border-yellow bg-yellow/5" : "border-border bg-card"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="font-display font-semibold">{a.nom}</div>
-                      {active && <Check size={16} className="text-yellow" />}
-                    </div>
-                    <div className="mt-1 text-sm text-muted-foreground">{a.adresse}</div>
-                    <div className="mt-2 text-xs font-mono text-muted-foreground">
-                      {a.telephone}
-                    </div>
-                  </button>
-                );
-              })}
+            <div className="mt-6 grid gap-4 lg:grid-cols-[45%_55%]">
+              <div className="max-h-[500px] space-y-3 overflow-y-auto pr-1">
+                {agences.map((a) => {
+                  const active = s.agence?.id === a.id;
+                  return (
+                    <button
+                      key={a.id}
+                      onClick={() => s.setAgence(a)}
+                      className={`w-full rounded-xl border p-4 text-left transition hover-lift ${
+                        active ? "border-yellow bg-yellow/5" : "border-border bg-card"
+                      }`}
+                    >
+                      <div className="flex items-start justify-between">
+                        <div className="font-display font-semibold">{a.nom}</div>
+                        {active && <Check size={16} className="text-yellow" />}
+                      </div>
+                      <div className="mt-1 text-sm text-muted-foreground">{a.adresse}</div>
+                      <div className="mt-2 text-xs font-mono text-muted-foreground">
+                        {a.telephone}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <AgencyMap
+                agencies={agences}
+                selectedAgenceId={s.agence?.id}
+                onAgenceSelect={s.setAgence}
+                height="500px"
+              />
             </div>
           </div>
         )}
@@ -159,7 +201,7 @@ function NouveauRDV() {
                   <button
                     key={v.id}
                     onClick={() => s.setVehicule(v)}
-                    className={`text-left rounded-xl border p-4 transition hover-lift ${
+                    className={`rounded-xl border p-4 text-left transition hover-lift ${
                       active ? "border-yellow bg-yellow/5" : "border-border"
                     }`}
                   >
@@ -199,26 +241,27 @@ function NouveauRDV() {
                   Heure
                 </label>
                 <div className="grid grid-cols-4 gap-2">
-                  {["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00"].map(
-                    (h) => {
-                      const active = s.heure === h;
-                      return (
-                        <button
-                          key={h}
-                          onClick={() =>
-                            s.setSlot(s.date ?? new Date().toISOString().slice(0, 10), h)
-                          }
-                          className={`rounded-md border px-2 py-2 text-sm font-mono ${
-                            active
+                  {HOURS.map((h) => {
+                    const active = s.heure === h;
+                    const disabled = unavailableHours.has(h);
+                    return (
+                      <button
+                        key={h}
+                        disabled={disabled}
+                        title={disabled ? "Créneau indisponible" : undefined}
+                        onClick={() => s.setSlot(s.date ?? new Date().toISOString().slice(0, 10), h)}
+                        className={`rounded-md border px-2 py-2 text-sm font-mono ${
+                          disabled
+                            ? "cursor-not-allowed border-border bg-muted text-muted-foreground line-through"
+                            : active
                               ? "border-yellow bg-yellow text-renault-black"
                               : "border-border hover:border-yellow/50"
-                          }`}
-                        >
-                          {h}
-                        </button>
-                      );
-                    },
-                  )}
+                        }`}
+                      >
+                        {h}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             </div>
@@ -227,17 +270,16 @@ function NouveauRDV() {
 
         {s.step === 4 && (
           <div>
-            <h2 className="font-display text-xl font-semibold">Notes additionnelles</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Décrivez le motif de votre visite (optionnel).
-            </p>
-            <textarea
-              value={s.notes}
-              onChange={(e) => s.setNotes(e.target.value)}
-              rows={6}
-              placeholder="Ex: vidange, contrôle des freins, bruit moteur..."
-              className="mt-4 w-full rounded-md border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            <h2 className="font-display text-xl font-semibold">Services souhaités</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Sélectionnez au moins un service.</p>
+            <div className="mt-4">
+              <ServiceChecklist
+                value={s.servicesSelectionnes}
+                notesLibres={s.notesLibres}
+                onChange={s.setServices}
+                onNotesChange={s.setNotesLibres}
+              />
+            </div>
           </div>
         )}
 
@@ -258,7 +300,17 @@ function NouveauRDV() {
                 label="Date & heure"
                 value={s.date && s.heure ? fmtDateLong(`${s.date}T${s.heure}:00`) : ""}
               />
-              {s.notes && <Row label="Notes" value={s.notes} />}
+              <div className="flex flex-wrap justify-end gap-2">
+                {s.servicesSelectionnes.map((service) => (
+                  <span
+                    key={service}
+                    className="rounded-full border border-yellow/30 bg-yellow/10 px-3 py-1 text-xs"
+                  >
+                    {service}
+                  </span>
+                ))}
+              </div>
+              {s.notesLibres && <Row label="Précisions" value={s.notesLibres} />}
             </div>
             <label className="mt-6 flex items-start gap-3 text-sm">
               <input
@@ -275,7 +327,6 @@ function NouveauRDV() {
           </div>
         )}
 
-        {/* Nav */}
         <div className="mt-8 flex items-center justify-between border-t border-border pt-6">
           <button
             onClick={s.prev}
@@ -295,8 +346,8 @@ function NouveauRDV() {
           ) : (
             <button
               onClick={submit}
-              disabled={!canNext}
-              className="press inline-flex items-center gap-2 rounded-md bg-yellow px-5 py-2 text-sm font-semibold text-renault-black disabled:opacity-40 yellow-glow"
+              disabled={!canNext || createAppointmentMutation.isPending}
+              className="press yellow-glow inline-flex items-center gap-2 rounded-md bg-yellow px-5 py-2 text-sm font-semibold text-renault-black disabled:opacity-40"
             >
               Confirmer le rendez-vous <Check size={16} />
             </button>

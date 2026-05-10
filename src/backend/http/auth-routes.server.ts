@@ -28,8 +28,8 @@ function withSetCookies(response: Response, cookies: string[]): Response {
 }
 
 function landingPathForRoles(roles: string[]): string {
-  if (roles.includes("agent_bo")) return "/back-office/dashboard";
-  if (roles.includes("agent_fo")) return "/agent-fo/dashboard";
+  if (roles.includes("agent_back_office")) return "/back-office/dashboard";
+  if (roles.includes("agent_front_office")) return "/agent-fo/dashboard";
   return "/client/dashboard";
 }
 
@@ -83,8 +83,10 @@ async function handleMe(request: Request): Promise<Response> {
   const config = getBackendConfig();
   const repos = await getBackendRepositories(config.mongo);
   const user = await repos.users.findById(session.userId);
+  const cookies = parseCookieHeader(request.headers.get("cookie"));
 
   return jsonResponse({
+    accessToken: cookies[ACCESS_TOKEN_COOKIE],
     user: {
       id: session.userId,
       subject: session.principal.subject,

@@ -1,12 +1,11 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AppRole, Profile } from "@/types";
-import { useUIStore } from "@/stores/uiStore";
 
 interface AuthContextValue {
   user: AppUser | null;
   profile: Profile | null;
-  role: AppRole; // effective role (with dev override)
-  realRole: AppRole; // actual DB role
+  role: AppRole;
+  realRole: AppRole;
   loading: boolean;
   signOut: () => void;
 }
@@ -24,6 +23,7 @@ interface AppUser {
 
 interface MeResponse {
   user: AppUser | null;
+  accessToken?: string;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -33,7 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [realRole, setRealRole] = useState<AppRole>("client");
   const [loading, setLoading] = useState(true);
-  const devRole = useUIStore((s) => s.devRoleOverride);
 
   useEffect(() => {
     let active = true;
@@ -43,12 +42,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!response.ok) return { user: null };
         return (await response.json()) as MeResponse;
       })
-      .then(({ user }) => {
+      .then(({ user, accessToken }) => {
         if (!active) return;
         setUser(user);
         if (!user) {
           setProfile(null);
-          setRealRole("client");
+          const fallbackRole = getDevRole();
+          if (fallbackRole) {
+            setRealRole(fallbackRole);
+            return;
+          }
+          if (window.location.pathname !== "/login") {
+            window.location.href = "/login";
+          }
           return;
         }
 
@@ -60,13 +66,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           telephone: user.phone,
           agenceId: user.agencyId,
         });
-        setRealRole(resolvePrimaryRole(user.roles));
+        setRealRole(accessToken ? decodeRole(accessToken) : resolvePrimaryRole(user.roles));
       })
       .catch(() => {
         if (!active) return;
         setUser(null);
         setProfile(null);
-        setRealRole("client");
+        const fallbackRole = getDevRole();
+        if (fallbackRole) {
+          setRealRole(fallbackRole);
+        } else if (window.location.pathname !== "/login") {
+          window.location.href = "/login";
+        }
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -81,7 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     window.location.href = "/auth/logout";
   };
 
-  const role: AppRole = devRole ?? realRole;
+  const role: AppRole = realRole;
   const value = useMemo(
     () => ({ user, profile, role, realRole, loading, signOut }),
     [user, profile, role, realRole, loading],
@@ -96,8 +107,24 @@ export function useAuth() {
   return ctx;
 }
 
-function resolvePrimaryRole(roles: AppRole[]): AppRole {
-  if (roles.includes("agent_bo")) return "agent_bo";
-  if (roles.includes("agent_fo")) return "agent_fo";
+export const decodeRole = (token: string): AppRole => {
+  const payload = JSON.parse(atob(token.split(".")[1]));
+  const roles: string[] = payload?.realm_access?.roles ?? [];
+  if (roles.includes("agent_back_office")) return "agent_back_office";
+  if (roles.includes("agent_front_office")) return "agent_front_office";
   return "client";
+};
+
+function resolvePrimaryRole(roles: AppRole[]): AppRole {
+  if (roles.includes("agent_back_office")) return "agent_back_office";
+  if (roles.includes("agent_front_office")) return "agent_front_office";
+  return "client";
+}
+
+function getDevRole(): AppRole | null {
+  if (!import.meta.env.DEV) return null;
+  const role = localStorage.getItem("dev_role");
+  return role === "client" || role === "agent_front_office" || role === "agent_back_office"
+    ? role
+    : null;
 }

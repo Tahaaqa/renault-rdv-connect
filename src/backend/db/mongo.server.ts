@@ -73,7 +73,8 @@ interface MongoAppointment extends MongoAuditFields {
   vehicleId: ObjectId;
   startsAt: Date;
   status: StatutRDV;
-  notes: string | null;
+  servicesSelectionnes: string[];
+  notesLibres: string | null;
   createdByUserId: ObjectId | null;
 }
 
@@ -111,6 +112,10 @@ function toNullableObjectId(id: EntityId | null | undefined): ObjectId | null {
 
 function dateToIso(date: Date): string {
   return date.toISOString();
+}
+
+function isDuplicateKeyError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === 11000;
 }
 
 function userToDomain(user: MongoUser): BackendUser {
@@ -164,7 +169,8 @@ function appointmentToDomain(appointment: MongoAppointment): BackendAppointment 
     vehicleId: appointment.vehicleId.toHexString(),
     startsAt: dateToIso(appointment.startsAt),
     status: appointment.status,
-    notes: appointment.notes,
+    servicesSelectionnes: appointment.servicesSelectionnes ?? [],
+    notesLibres: appointment.notesLibres ?? null,
     createdByUserId: appointment.createdByUserId?.toHexString() ?? null,
     createdAt: dateToIso(appointment.createdAt),
     updatedAt: dateToIso(appointment.updatedAt),
@@ -348,10 +354,11 @@ function buildVehicleRepository(collection: Collection<MongoVehicle>): VehicleRe
     },
     async create(input) {
       const now = new Date();
+      const plateNumber = input.plateNumber.toUpperCase().trim();
       const document: MongoVehicle = {
         _id: new ObjectId(),
         ownerUserId: toObjectId(input.ownerUserId),
-        plateNumber: input.plateNumber,
+        plateNumber,
         brand: input.brand,
         model: input.model,
         year: input.year,
@@ -362,13 +369,38 @@ function buildVehicleRepository(collection: Collection<MongoVehicle>): VehicleRe
       await collection.insertOne(document);
       return vehicleToDomain(document);
     },
+    async update(id, ownerUserId, patch) {
+      const $set: Partial<MongoVehicle> = { updatedAt: new Date() };
+      if ("plateNumber" in patch && patch.plateNumber) {
+        $set.plateNumber = patch.plateNumber.toUpperCase().trim();
+      }
+      if ("brand" in patch && patch.brand) $set.brand = patch.brand;
+      if ("model" in patch && patch.model) $set.model = patch.model;
+      if ("year" in patch && patch.year) $set.year = patch.year;
+      if ("isPrimary" in patch && patch.isPrimary !== undefined) $set.isPrimary = patch.isPrimary;
+
+      const updated = await collection.findOneAndUpdate(
+        { _id: toObjectId(id), ownerUserId: toObjectId(ownerUserId) },
+        { $set },
+        { returnDocument: "after" },
+      );
+      if (!updated) throw new Response("Vehicle not found", { status: 404 });
+      return vehicleToDomain(updated);
+    },
+    async delete(id, ownerUserId) {
+      const result = await collection.deleteOne({
+        _id: toObjectId(id),
+        ownerUserId: toObjectId(ownerUserId),
+      });
+      if (result.deletedCount === 0) throw new Response("Vehicle not found", { status: 404 });
+    },
   };
 }
 
 function buildAppointmentRepository(
   collection: Collection<MongoAppointment>,
 ): AppointmentRepository {
-  const sortByDate = { startsAt: -1 as const };
+  const sortByDate = { startsAt: 1 as const };
 
   return {
     async findById(id) {
@@ -405,12 +437,27 @@ function buildAppointmentRepository(
         vehicleId: toObjectId(input.vehicleId),
         startsAt: new Date(input.startsAt),
         status: input.status,
-        notes: input.notes,
+        servicesSelectionnes: input.servicesSelectionnes,
+        notesLibres: input.notesLibres,
         createdByUserId: input.createdByUserId ? toObjectId(input.createdByUserId) : null,
         createdAt: now,
         updatedAt: now,
       };
-      await collection.insertOne(document);
+      try {
+        await collection.insertOne(document);
+      } catch (error) {
+        if (isDuplicateKeyError(error)) {
+          throw new Response(
+            JSON.stringify({
+              status: "error",
+              code: "CRENEAU_UNAVAILABLE",
+              message: "Ce créneau vient d'être réservé. Veuillez en choisir un autre.",
+            }),
+            { status: 409, headers: { "content-type": "application/json" } },
+          );
+        }
+        throw error;
+      }
       return appointmentToDomain(document);
     },
     async updateStatus(id, status) {
@@ -423,6 +470,78 @@ function buildAppointmentRepository(
         throw new Response("Appointment not found", { status: 404 });
       }
       return appointmentToDomain(updated);
+    },
+    async cancel(id, actorUserId, isStaff) {
+      const appointment = await collection.findOne({ _id: toObjectId(id) });
+      if (!appointment) throw new Response("Appointment not found", { status: 404 });
+      if (!isStaff && !appointment.clientUserId.equals(toObjectId(actorUserId))) {
+        throw new Response("Forbidden", { status: 403 });
+      }
+      if (appointment.status !== "EnAttente" && appointment.status !== "Confirme") {
+        throw new Response("Appointment cannot be cancelled", { status: 400 });
+      }
+      if (appointment.startsAt.getTime() - Date.now() < 24 * 60 * 60 * 1000) {
+        throw new Response(
+          JSON.stringify({
+            code: "TOO_LATE_TO_CANCEL",
+            message: "Annulation impossible moins de 24h avant le RDV.",
+          }),
+          { status: 400, headers: { "content-type": "application/json" } },
+        );
+      }
+      const updated = await collection.findOneAndUpdate(
+        { _id: appointment._id },
+        { $set: { status: "Annule", updatedAt: new Date() } },
+        { returnDocument: "after" },
+      );
+      if (!updated) throw new Response("Appointment not found", { status: 404 });
+      return appointmentToDomain(updated);
+    },
+    async modify(id, actorUserId, isStaff, patch) {
+      const appointment = await collection.findOne({ _id: toObjectId(id) });
+      if (!appointment) throw new Response("Appointment not found", { status: 404 });
+      if (!isStaff && !appointment.clientUserId.equals(toObjectId(actorUserId))) {
+        throw new Response("Forbidden", { status: 403 });
+      }
+      if (appointment.status !== "EnAttente") {
+        throw new Response("Only pending appointments can be modified", { status: 400 });
+      }
+
+      const $set: Partial<MongoAppointment> = { updatedAt: new Date() };
+      if (patch.startsAt) $set.startsAt = new Date(patch.startsAt);
+      if (patch.servicesSelectionnes) $set.servicesSelectionnes = patch.servicesSelectionnes;
+      if ("notesLibres" in patch) $set.notesLibres = patch.notesLibres ?? null;
+
+      try {
+        const updated = await collection.findOneAndUpdate(
+          { _id: appointment._id },
+          { $set },
+          { returnDocument: "after" },
+        );
+        if (!updated) throw new Response("Appointment not found", { status: 404 });
+        return appointmentToDomain(updated);
+      } catch (error) {
+        if (isDuplicateKeyError(error)) {
+          throw new Response(
+            JSON.stringify({
+              status: "error",
+              code: "CRENEAU_UNAVAILABLE",
+              message: "Ce créneau vient d'être réservé. Veuillez en choisir un autre.",
+            }),
+            { status: 409, headers: { "content-type": "application/json" } },
+          );
+        }
+        throw error;
+      }
+    },
+    async markVehicleDeleted(vehicleId) {
+      await collection.updateMany(
+        { vehicleId: toObjectId(vehicleId) },
+        {
+          $addToSet: { servicesSelectionnes: "Autre" },
+          $set: { notesLibres: "véhicule supprimé", updatedAt: new Date() },
+        },
+      );
     },
   };
 }
@@ -529,6 +648,15 @@ export async function ensureMongoIndexes(config: MongoConfig): Promise<void> {
     db.collection(COLLECTIONS.vehicles).createIndex({ plateNumber: 1 }),
     db.collection(COLLECTIONS.appointments).createIndex({ clientUserId: 1, startsAt: -1 }),
     db.collection(COLLECTIONS.appointments).createIndex({ agencyId: 1, startsAt: -1 }),
+    db
+      .collection(COLLECTIONS.appointments)
+      .createIndex(
+        { agencyId: 1, startsAt: 1, status: 1 },
+        {
+          unique: true,
+          partialFilterExpression: { status: { $in: ["EnAttente", "Confirme"] } },
+        },
+      ),
     db.collection(COLLECTIONS.appointments).createIndex({ reference: 1 }, { unique: true }),
     db.collection(COLLECTIONS.complaints).createIndex({ clientUserId: 1, createdAt: -1 }),
     db.collection(COLLECTIONS.complaints).createIndex({ appointmentId: 1, createdAt: -1 }),
@@ -561,6 +689,12 @@ export async function seedDefaultData(config: MongoConfig): Promise<{
   for (const agency of DEFAULT_AGENCIES) {
     const existing = await agenciesCol.findOne({ name: agency.name, city: agency.city });
     if (existing) {
+      if (!existing.location && "location" in agency) {
+        await agenciesCol.updateOne(
+          { _id: existing._id },
+          { $set: { location: agency.location, updatedAt: now } },
+        );
+      }
       agencyIds.push(existing._id);
     } else {
       const _id = new ObjectId();
@@ -570,7 +704,7 @@ export async function seedDefaultData(config: MongoConfig): Promise<{
         city: agency.city,
         address: agency.address,
         phone: agency.phone,
-        location: null,
+        location: agency.location ?? null,
         createdAt: now,
         updatedAt: now,
       });
@@ -596,7 +730,7 @@ export async function seedDefaultData(config: MongoConfig): Promise<{
         lastName: user.lastName,
         phone: user.phone,
         roles: user.roles,
-        agencyId: user.roles.includes("agent_fo") ? agencyIds[0] : null,
+        agencyId: user.roles.includes("agent_front_office") ? agencyIds[0] : null,
         createdAt: now,
         updatedAt: now,
       });
@@ -650,7 +784,8 @@ export async function seedDefaultData(config: MongoConfig): Promise<{
         vehicleId: vehicleIds[appt.vehicleIndex],
         startsAt,
         status: appt.status,
-        notes: appt.notes ?? null,
+        servicesSelectionnes: appt.servicesSelectionnes ?? ["Autre"],
+        notesLibres: appt.notesLibres ?? null,
         createdByUserId: null,
         createdAt: now,
         updatedAt: now,

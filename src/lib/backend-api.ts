@@ -18,7 +18,15 @@ async function requestJson<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed: ${response.status}`);
+    const error = new Error(`Request failed: ${response.status}`) as Error & {
+      status?: number;
+      payload?: unknown;
+    };
+    error.status = response.status;
+    try {
+      error.payload = await response.json();
+    } catch {}
+    throw error;
   }
 
   return (await response.json()) as T;
@@ -99,6 +107,28 @@ export function createVehicle(input: {
   });
 }
 
+export function updateVehicle(
+  id: string,
+  input: {
+    plateNumber?: string;
+    brand?: string;
+    model?: string;
+    year?: number;
+    isPrimary?: boolean;
+  },
+) {
+  return requestJson<{ vehicle: BackendVehicle }>(`/api/vehicules/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  });
+}
+
+export function deleteVehicle(id: string) {
+  return requestJson<{ ok: true }>(`/api/vehicules/${id}`, {
+    method: "DELETE",
+  });
+}
+
 export function listAppointments() {
   return requestJson<{ appointments: BackendAppointment[] }>("/api/appointments");
 }
@@ -108,12 +138,54 @@ export function createAppointment(input: {
   agencyId: string;
   vehicleId: string;
   startsAt: string;
-  notes?: string | null;
+  servicesSelectionnes: string[];
+  notesLibres?: string | null;
 }) {
   return requestJson<{ appointment: BackendAppointment }>("/api/appointments", {
     method: "POST",
     body: JSON.stringify(input),
   });
+}
+
+export function cancelAppointment(id: string) {
+  return requestJson<{ appointment: BackendAppointment }>(`/api/rdv/${id}/annuler`, {
+    method: "PATCH",
+  });
+}
+
+export function modifyAppointment(
+  id: string,
+  input: {
+    startsAt?: string;
+    servicesSelectionnes?: string[];
+    notesLibres?: string | null;
+  },
+) {
+  return requestJson<{ appointment: BackendAppointment }>(`/api/rdv/${id}/modifier`, {
+    method: "PATCH",
+    body: JSON.stringify(input),
+  });
+}
+
+export async function scanPlate(image: File) {
+  const formData = new FormData();
+  formData.append("image", image);
+  const response = await fetch("/api/ocr/plaque", {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    const error = new Error(`Request failed: ${response.status}`) as Error & {
+      status?: number;
+      payload?: unknown;
+    };
+    error.status = response.status;
+    error.payload = payload;
+    throw error;
+  }
+  return payload as { immatriculation: string; confidence: number };
 }
 
 export function updateAppointmentStatus(id: string, status: BackendAppointment["status"]) {

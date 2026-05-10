@@ -17,6 +17,7 @@ export interface KeycloakConfig {
 export interface BackendConfig {
   appBaseUrl: string;
   seedToken: string | null;
+  geminiApiKey: string | null;
   mongo: MongoConfig;
   keycloak: KeycloakConfig;
 }
@@ -37,6 +38,7 @@ export function getBackendConfig(env: EnvSource = getRequestEnv() ?? process.env
   return {
     appBaseUrl,
     seedToken: env.BACKEND_SEED_TOKEN ?? null,
+    geminiApiKey: env.GEMINI_API_KEY ?? null,
     mongo: {
       uri: requireEnv(env, "MONGODB_URI"),
       databaseName: requireEnv(env, "MONGODB_DB_NAME"),

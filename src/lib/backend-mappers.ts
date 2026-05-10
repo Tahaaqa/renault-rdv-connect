@@ -51,7 +51,8 @@ export function mapAppointment(appointment: BackendAppointment): RendezVous {
     vehiculeId: appointment.vehicleId,
     date: appointment.startsAt,
     statut: appointment.status,
-    notes: appointment.notes ?? undefined,
+    servicesSelectionnes: appointment.servicesSelectionnes ?? [],
+    notesLibres: appointment.notesLibres ?? undefined,
     createdAt: appointment.createdAt,
     agentCreateurId: appointment.createdByUserId ?? undefined,
   };

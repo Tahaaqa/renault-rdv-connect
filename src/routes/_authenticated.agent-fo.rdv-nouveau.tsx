@@ -40,7 +40,7 @@ function AFONouveau() {
   const [vehiculeId, setVehiculeId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
   const [heure, setHeure] = useState("10:00");
-  const [notes, setNotes] = useState("");
+  const [notesLibres, setNotesLibres] = useState("");
 
   useEffect(() => {
     if (!clientId && clients[0]) setClientId(clients[0].id);
@@ -70,7 +70,8 @@ function AFONouveau() {
       agencyId: agenceId,
       vehicleId: vehiculeId,
       startsAt: dt.toISOString(),
-      notes,
+      servicesSelectionnes: notesLibres.trim() ? ["Autre"] : ["Révision générale"],
+      notesLibres: notesLibres || null,
     });
   };
 
@@ -126,10 +127,10 @@ function AFONouveau() {
             />
           </Field>
           <div className="sm:col-span-2">
-            <Field label="Notes">
+            <Field label="Précisions">
               <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
+                value={notesLibres}
+                onChange={(e) => setNotesLibres(e.target.value)}
                 rows={3}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />

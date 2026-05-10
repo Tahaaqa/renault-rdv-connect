@@ -47,6 +47,12 @@ export interface VehicleRepository {
   listAll(): Promise<BackendVehicle[]>;
   findById(id: EntityId): Promise<BackendVehicle | null>;
   create(input: Omit<BackendVehicle, "id" | "createdAt" | "updatedAt">): Promise<BackendVehicle>;
+  update(
+    id: EntityId,
+    ownerUserId: EntityId,
+    patch: Partial<Omit<BackendVehicle, "id" | "ownerUserId" | "createdAt" | "updatedAt">>,
+  ): Promise<BackendVehicle>;
+  delete(id: EntityId, ownerUserId: EntityId): Promise<void>;
 }
 
 export interface AppointmentRepository {
@@ -58,6 +64,18 @@ export interface AppointmentRepository {
     input: Omit<BackendAppointment, "id" | "reference" | "createdAt" | "updatedAt">,
   ): Promise<BackendAppointment>;
   updateStatus(id: EntityId, status: StatutRDV): Promise<BackendAppointment>;
+  cancel(id: EntityId, actorUserId: EntityId, isStaff: boolean): Promise<BackendAppointment>;
+  modify(
+    id: EntityId,
+    actorUserId: EntityId,
+    isStaff: boolean,
+    patch: {
+      startsAt?: string;
+      servicesSelectionnes?: string[];
+      notesLibres?: string | null;
+    },
+  ): Promise<BackendAppointment>;
+  markVehicleDeleted(vehicleId: EntityId): Promise<void>;
 }
 
 export interface ComplaintRepository {

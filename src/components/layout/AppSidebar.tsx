@@ -38,6 +38,7 @@ const NAV: Record<AppRole, { group: string; items: Item[] }[]> = {
       items: [
         { label: "Tableau de bord", to: "/client/dashboard", icon: LayoutDashboard },
         { label: "Nouveau RDV", to: "/client/rdv-nouveau", icon: CalendarPlus },
+        { label: "Agences", to: "/client/agences", icon: Building2 },
         { label: "Historique", to: "/client/historique", icon: History },
         { label: "Réclamations", to: "/client/reclamations", icon: MessageSquareWarning },
       ],
@@ -50,7 +51,7 @@ const NAV: Record<AppRole, { group: string; items: Item[] }[]> = {
       ],
     },
   ],
-  agent_fo: [
+  agent_front_office: [
     {
       group: "Front-Office",
       items: [
@@ -61,7 +62,7 @@ const NAV: Record<AppRole, { group: string; items: Item[] }[]> = {
       ],
     },
   ],
-  agent_bo: [
+  agent_back_office: [
     {
       group: "Back-Office",
       items: [

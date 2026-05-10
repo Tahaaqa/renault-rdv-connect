@@ -14,8 +14,8 @@ export const Route = createFileRoute("/_authenticated/back-office/utilisateurs")
 
 const ROLE_LABELS: Record<AppRole, string> = {
   client: "Client",
-  agent_fo: "Agent FO",
-  agent_bo: "Back-Office",
+  agent_front_office: "Agent FO",
+  agent_back_office: "Back-Office",
 };
 
 function ABOUsers() {
@@ -119,7 +119,7 @@ function UserRow({
       lastName: lastName.trim() || null,
       phone: phone.trim() || null,
       roles: [role],
-      agencyId: role === "agent_fo" ? agencyId || null : null,
+      agencyId: role === "agent_front_office" ? agencyId || null : null,
     });
   };
 
@@ -169,7 +169,7 @@ function UserRow({
         <select
           value={agencyId}
           onChange={(e) => setAgencyId(e.target.value)}
-          disabled={role !== "agent_fo"}
+          disabled={role !== "agent_front_office"}
           className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm disabled:opacity-50"
         >
           <option value="">Aucune agence</option>
@@ -200,7 +200,7 @@ function UserRow({
 }
 
 function primaryRole(roles: AppRole[]): AppRole {
-  if (roles.includes("agent_bo")) return "agent_bo";
-  if (roles.includes("agent_fo")) return "agent_fo";
+  if (roles.includes("agent_back_office")) return "agent_back_office";
+  if (roles.includes("agent_front_office")) return "agent_front_office";
   return "client";
 }

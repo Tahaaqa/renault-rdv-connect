@@ -45,7 +45,8 @@ export interface BackendAppointment extends AuditFields {
   vehicleId: EntityId;
   startsAt: string;
   status: StatutRDV;
-  notes: string | null;
+  servicesSelectionnes: string[];
+  notesLibres: string | null;
   createdByUserId: EntityId | null;
 }
 
