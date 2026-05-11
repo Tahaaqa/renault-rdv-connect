@@ -31,6 +31,16 @@ export function getKeycloakAuthorizationUrl(config: KeycloakConfig, state: strin
   return url.toString();
 }
 
+export function getKeycloakRegistrationUrl(config: KeycloakConfig, state: string): string {
+  const url = new URL(`${config.issuerUrl}/protocol/openid-connect/registrations`);
+  url.searchParams.set("client_id", config.clientId);
+  url.searchParams.set("redirect_uri", config.redirectUri);
+  url.searchParams.set("response_type", "code");
+  url.searchParams.set("scope", "openid profile email");
+  url.searchParams.set("state", state);
+  return url.toString();
+}
+
 export function getKeycloakLogoutUrl(config: KeycloakConfig, idTokenHint?: string): string {
   const url = new URL(`${config.issuerUrl}/protocol/openid-connect/logout`);
   url.searchParams.set("post_logout_redirect_uri", config.postLogoutRedirectUri);

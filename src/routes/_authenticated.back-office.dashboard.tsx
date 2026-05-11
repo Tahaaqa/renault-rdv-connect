@@ -1,4 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Calendar, Building2, MessageSquareWarning, Users } from "lucide-react";
 import {
   AreaChart,
@@ -22,7 +23,16 @@ export const Route = createFileRoute("/_authenticated/back-office/dashboard")({
 });
 
 function ABODash() {
-  const { loading } = useAuth();
+  const { loading, role } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && role !== "agent_back_office") {
+      if (role === "agent_front_office") navigate({ to: "/agent-fo/dashboard" });
+      else navigate({ to: "/client/dashboard" });
+    }
+  }, [loading, role, navigate]);
+
   const appointmentsQuery = useQuery({
     queryKey: ["appointments"],
     queryFn: listAppointments,
@@ -52,6 +62,24 @@ function ABODash() {
   const reclamations = complaintsQuery.data?.complaints.map(mapComplaint) ?? [];
   const agences = agenciesQuery.data?.agencies.map(mapAgency) ?? [];
   const open = reclamations.filter((r) => r.statut !== "Resolue");
+
+  if (loading || role !== "agent_back_office") return null;
+
+  const error =
+    appointmentsQuery.error || complaintsQuery.error || clientsQuery.error || agenciesQuery.error;
+  if (error) {
+    return (
+      <div className="mx-auto max-w-7xl space-y-8">
+        <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-6 text-red-500">
+          <h3 className="font-semibold">Erreur de chargement des donnees (API /api/*)</h3>
+          <p className="mt-2 text-sm">{error.message}</p>
+          <p className="mt-1 text-xs opacity-70">
+            Veuillez verifier la connexion au backend et les permissions Keycloak.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   const trend = Array.from({ length: 7 }).map((_, i) => {
     const d = new Date();
@@ -86,7 +114,7 @@ function ABODash() {
         <div className="rounded-xl border border-border bg-card p-5 lg:col-span-2">
           <h3 className="mb-4 font-display text-base font-semibold">RDV des 7 derniers jours</h3>
           <div className="h-64">
-            <ResponsiveContainer>
+            <ResponsiveContainer minWidth={0} minHeight={0}>
               <AreaChart data={trend}>
                 <defs>
                   <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
@@ -119,7 +147,7 @@ function ABODash() {
         <div className="rounded-xl border border-border bg-card p-5">
           <h3 className="mb-4 font-display text-base font-semibold">Par agence</h3>
           <div className="h-64">
-            <ResponsiveContainer>
+            <ResponsiveContainer minWidth={0} minHeight={0}>
               <BarChart data={byAgence}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis dataKey="name" stroke="var(--muted-foreground)" fontSize={10} />

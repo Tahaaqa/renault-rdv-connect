@@ -50,8 +50,15 @@ function ABOPlannings() {
       );
     });
 
+  const error = appointmentsQuery.error || agenciesQuery.error;
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
+      {error && (
+        <div className="rounded-xl border border-red-500/50 bg-red-500/10 p-4 text-sm text-red-500">
+          Erreur API: {error.message}
+        </div>
+      )}
       <select
         value={agenceId}
         onChange={(e) => setAgenceId(e.target.value)}

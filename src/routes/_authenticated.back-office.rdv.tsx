@@ -1,12 +1,31 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { VehiclePlate } from "@/components/shared/VehiclePlate";
 import { fmtDateLong } from "@/lib/format";
 import { useAuth } from "@/context/AuthContext";
-import { listAgencies, listAppointments, listClients, listVehicles } from "@/lib/backend-api";
+import {
+  listAgencies,
+  listAppointments,
+  listClients,
+  listVehicles,
+  updateAppointmentStatus,
+  cancelAppointment,
+} from "@/lib/backend-api";
 import { mapAgency, mapAppointment, mapUserClient, mapVehicle } from "@/lib/backend-mappers";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { MoreHorizontal } from "lucide-react";
+import { toast } from "sonner";
+import type { StatutRDV } from "@/types";
 
 export const Route = createFileRoute("/_authenticated/back-office/rdv")({
   component: ABORdv,
@@ -14,6 +33,7 @@ export const Route = createFileRoute("/_authenticated/back-office/rdv")({
 
 function ABORdv() {
   const { loading } = useAuth();
+  const queryClient = useQueryClient();
   const appointmentsQuery = useQuery({
     queryKey: ["appointments"],
     queryFn: listAppointments,
@@ -47,6 +67,29 @@ function ABORdv() {
     .filter((r) => agence === "all" || r.agenceId === agence)
     .sort((a, b) => +new Date(b.date) - +new Date(a.date));
 
+  const updateStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: StatutRDV }) =>
+      updateAppointmentStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast.success("Statut du RDV mis a jour");
+    },
+    onError: () => {
+      toast.error("Erreur lors de la mise a jour du statut");
+    },
+  });
+
+  const cancelRdv = useMutation({
+    mutationFn: (id: string) => cancelAppointment(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["appointments"] });
+      toast.success("RDV annule avec succes");
+    },
+    onError: () => {
+      toast.error("Erreur lors de l'annulation du RDV");
+    },
+  });
+
   return (
     <div className="mx-auto max-w-7xl space-y-6">
       <div className="flex flex-wrap items-center gap-3">
@@ -75,6 +118,7 @@ function ABORdv() {
               <th className="px-4 py-3">Agence</th>
               <th className="px-4 py-3">Vehicule</th>
               <th className="px-4 py-3">Statut</th>
+              <th className="px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -95,6 +139,46 @@ function ABORdv() {
                   </td>
                   <td className="px-4 py-3">
                     <StatusBadge statut={r.statut} />
+                  </td>
+                  <td className="px-4 py-3 text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <span className="sr-only">Ouvrir le menu</span>
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onClick={() => updateStatus.mutate({ id: r.id, status: "EnAttente" })}
+                          disabled={updateStatus.isPending}
+                        >
+                          Marquer En Attente
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => updateStatus.mutate({ id: r.id, status: "Confirme" })}
+                          disabled={updateStatus.isPending}
+                        >
+                          Marquer Confirme
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => updateStatus.mutate({ id: r.id, status: "Termine" })}
+                          disabled={updateStatus.isPending}
+                        >
+                          Marquer Termine
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-red-500"
+                          onClick={() => cancelRdv.mutate(r.id)}
+                          disabled={cancelRdv.isPending}
+                        >
+                          Annuler le RDV
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </td>
                 </tr>
               );

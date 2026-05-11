@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { CalendarPlus, Calendar, Car, MessageSquareWarning, Plus, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -14,7 +15,16 @@ export const Route = createFileRoute("/_authenticated/client/dashboard")({
 });
 
 function ClientDashboard() {
-  const { profile, loading } = useAuth();
+  const { profile, loading, role } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && role !== "client") {
+      if (role === "agent_front_office") navigate({ to: "/agent-fo/dashboard" });
+      else navigate({ to: "/back-office/dashboard" });
+    }
+  }, [loading, role, navigate]);
+
   const appointmentsQuery = useQuery({
     queryKey: ["appointments"],
     queryFn: listAppointments,
@@ -52,6 +62,8 @@ function ClientDashboard() {
   );
 
   const next = upcoming[0];
+
+  if (loading || role !== "client") return null;
 
   return (
     <div className="mx-auto max-w-6xl space-y-8">

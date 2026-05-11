@@ -273,7 +273,7 @@ function buildUserRepository(collection: Collection<MongoUser>): UserRepository 
             _id: new ObjectId(),
             keycloakSubject: input.keycloakSubject,
             phone: null,
-            roles: ["client"],
+            roles: [],
             agencyId: null,
             createdAt: now,
           },

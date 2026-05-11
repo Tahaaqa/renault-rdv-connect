@@ -79,23 +79,41 @@ function Landing() {
                 et agents. Prenez, suivez et gérez vos rendez-vous d'entretien en quelques clics.
               </p>
 
-              <div className="mt-10 flex flex-wrap gap-3">
-                <a
-                  href="/login"
-                  className="press group inline-flex items-center gap-2 rounded-xl bg-yellow px-7 py-4 text-sm font-display font-semibold text-renault-black transition hover:brightness-110 yellow-glow"
-                >
-                  Accéder à mon espace
-                  <ArrowRight
-                    size={18}
-                    className="transition-transform group-hover:translate-x-1"
-                  />
-                </a>
-                <a
-                  href="/login"
-                  className="press inline-flex items-center gap-2 rounded-xl border border-border bg-card px-7 py-4 text-sm font-medium hover:bg-accent transition"
-                >
-                  Espace agent
-                </a>
+              <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+                <div>
+                  <a
+                    href="/login"
+                    className="press group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-yellow px-7 py-4 text-sm font-display font-semibold text-renault-black transition hover:brightness-110 yellow-glow sm:w-auto"
+                  >
+                    Accéder à mon espace
+                    <ArrowRight
+                      size={18}
+                      className="transition-transform group-hover:translate-x-1"
+                    />
+                  </a>
+                  <div className="mt-2 text-center sm:text-left">
+                    <a
+                      href="/auth/register"
+                      className="text-xs text-muted-foreground hover:text-yellow hover:underline transition"
+                    >
+                      Nouveau client ? Créer un compte
+                    </a>
+                  </div>
+                </div>
+
+                <div>
+                  <a
+                    href="/login"
+                    className="press inline-flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card px-7 py-4 text-sm font-medium hover:bg-accent transition sm:w-auto"
+                  >
+                    Espace agent
+                  </a>
+                  <div className="mt-2 text-center sm:text-left">
+                    <span className="text-[11px] text-muted-foreground/60">
+                      Votre compte est créé par un administrateur.
+                    </span>
+                  </div>
+                </div>
               </div>
 
               <div className="mt-12 flex flex-wrap gap-3">

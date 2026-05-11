@@ -50,9 +50,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           const fallbackRole = getDevRole();
           if (fallbackRole) {
             setRealRole(fallbackRole);
+            redirectByRole(fallbackRole);
             return;
           }
-          if (window.location.pathname !== "/login") {
+          if (window.location.pathname !== "/login" && window.location.pathname !== "/") {
             window.location.href = "/login";
           }
           return;
@@ -66,7 +67,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           telephone: user.phone,
           agenceId: user.agencyId,
         });
-        setRealRole(accessToken ? decodeRole(accessToken) : resolvePrimaryRole(user.roles));
+        const r = accessToken ? decodeRole(accessToken) : resolvePrimaryRole(user.roles);
+        setRealRole(r);
+        redirectByRole(r);
       })
       .catch(() => {
         if (!active) return;
@@ -75,7 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const fallbackRole = getDevRole();
         if (fallbackRole) {
           setRealRole(fallbackRole);
-        } else if (window.location.pathname !== "/login") {
+          redirectByRole(fallbackRole);
+        } else if (window.location.pathname !== "/login" && window.location.pathname !== "/") {
           window.location.href = "/login";
         }
       })
@@ -127,4 +131,13 @@ function getDevRole(): AppRole | null {
   return role === "client" || role === "agent_front_office" || role === "agent_back_office"
     ? role
     : null;
+}
+
+function redirectByRole(role: AppRole) {
+  const path = window.location.pathname;
+  if (path === "/login" || path === "/") {
+    if (role === "agent_back_office") window.location.href = "/back-office/dashboard";
+    else if (role === "agent_front_office") window.location.href = "/agent-fo/dashboard";
+    else window.location.href = "/client/dashboard";
+  }
 }

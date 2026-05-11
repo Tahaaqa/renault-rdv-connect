@@ -1,4 +1,5 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { Calendar, Users, MessageSquareWarning, CheckCircle2, Clock } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/context/AuthContext";
@@ -10,7 +11,16 @@ export const Route = createFileRoute("/_authenticated/agent-fo/dashboard")({
 });
 
 function AFODash() {
-  const { profile, loading } = useAuth();
+  const { profile, loading, role } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && role !== "agent_front_office") {
+      if (role === "agent_back_office") navigate({ to: "/back-office/dashboard" });
+      else navigate({ to: "/client/dashboard" });
+    }
+  }, [loading, role, navigate]);
+
   const appointmentsQuery = useQuery({
     queryKey: ["appointments"],
     queryFn: listAppointments,
@@ -49,6 +59,8 @@ function AFODash() {
   const pending = todayRdvs.filter((r) => r.statut === "EnAttente");
   const confirmed = todayRdvs.filter((r) => r.statut === "Confirme");
   const openRecs = reclamations.filter((r) => r.statut !== "Resolue");
+
+  if (loading || role !== "agent_front_office") return null;
 
   return (
     <div className="mx-auto max-w-7xl space-y-8">

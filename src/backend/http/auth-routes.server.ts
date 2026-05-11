@@ -2,6 +2,7 @@ import { getBackendConfig } from "@/backend/config";
 import {
   exchangeAuthorizationCode,
   getKeycloakAuthorizationUrl,
+  getKeycloakRegistrationUrl,
   getKeycloakLogoutUrl,
 } from "@/backend/auth/keycloak";
 import { verifyKeycloakAccessToken } from "@/backend/auth/keycloak.server";
@@ -37,6 +38,13 @@ async function handleLogin(): Promise<Response> {
   const config = getBackendConfig();
   const state = crypto.randomUUID();
   const response = redirectResponse(getKeycloakAuthorizationUrl(config.keycloak, state));
+  return withSetCookies(response, [authStateCookie(state)]);
+}
+
+async function handleRegister(): Promise<Response> {
+  const config = getBackendConfig();
+  const state = crypto.randomUUID();
+  const response = redirectResponse(getKeycloakRegistrationUrl(config.keycloak, state));
   return withSetCookies(response, [authStateCookie(state)]);
 }
 
@@ -105,6 +113,7 @@ export async function handleAuthRoute(request: Request): Promise<Response | unde
   if (request.method !== "GET") return undefined;
 
   if (url.pathname === "/auth/login") return handleLogin();
+  if (url.pathname === "/auth/register") return handleRegister();
   if (url.pathname === "/auth/callback") return handleCallback(request);
   if (url.pathname === "/auth/logout") return handleLogout(request);
   if (url.pathname === "/api/auth/me") return handleMe(request);

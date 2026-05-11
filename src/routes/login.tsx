@@ -80,6 +80,15 @@ function LoginPage() {
             Continuer avec Keycloak
           </a>
 
+          <div className="mt-4 text-center">
+            <a
+              href="/auth/register"
+              className="text-sm font-medium text-muted-foreground hover:text-yellow hover:underline transition"
+            >
+              Nouveau client ? Créer un compte
+            </a>
+          </div>
+
           <p className="mt-8 text-center text-[11px] text-muted-foreground">
             <Lock size={11} className="mr-1 inline" />
             La connexion, les mots de passe et les roles sont geres par le fournisseur SSO.

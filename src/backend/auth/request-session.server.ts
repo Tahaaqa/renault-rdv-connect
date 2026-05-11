@@ -24,7 +24,7 @@ export async function getSessionFromRequest(request: Request): Promise<AppSessio
     userId: user.id,
     principal: {
       ...principal,
-      roles: user.roles.length > 0 ? user.roles : principal.roles,
+      roles: Array.from(new Set([...user.roles, ...principal.roles])),
     },
     accessToken,
     expiresAt: 0,

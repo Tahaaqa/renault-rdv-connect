@@ -59,7 +59,7 @@ function ABOStats() {
       <div className="rounded-xl border border-border bg-card p-5">
         <h3 className="mb-4 font-display text-base font-semibold">Repartition par statut</h3>
         <div className="h-72">
-          <ResponsiveContainer>
+          <ResponsiveContainer minWidth={0} minHeight={0}>
             <PieChart>
               <Pie
                 data={byStatus}
@@ -90,7 +90,7 @@ function ABOStats() {
           Confirmes vs annules par agence
         </h3>
         <div className="h-72">
-          <ResponsiveContainer>
+          <ResponsiveContainer minWidth={0} minHeight={0}>
             <BarChart data={byAgence}>
               <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
               <XAxis dataKey="ville" stroke="var(--muted-foreground)" fontSize={11} />
